@@ -1,0 +1,1659 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>StockPulse | Institutional Stock Evaluator</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#ecfdf5',
+              500: '#10b981',
+              600: '#059669',
+              900: '#064e3b',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @keyframes pulse-subtle {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+    .score-glow {
+      box-shadow: 0 0 35px -5px rgba(16, 185, 129, 0.25);
+    }
+    .glass-card {
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans selection:bg-emerald-500 selection:text-slate-950">
+
+  <!-- Header Navigation -->
+  <header class="border-b border-slate-800/80 bg-slate-950/80 sticky top-0 z-50 backdrop-blur-md">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+          <i data-lucide="activity" class="w-6 h-6 text-slate-950 stroke-[2.5]"></i>
+        </div>
+        <div>
+          <span class="text-xl font-bold tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">StockPulse</span>
+          <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 ml-2 font-mono">PRO</span>
+        </div>
+      </div>
+      <div class="flex items-center gap-4">
+        <div id="navSentimentPill" class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs font-mono">
+          <span id="navSentimentDot" class="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
+          <span class="text-slate-400 hidden sm:inline">Market Climate:</span>
+          <b id="navSentimentText" class="text-rose-400">Extreme Fear (21)</b>
+        </div>
+        <div class="text-xs text-slate-400 hidden lg:block border-l border-slate-800 pl-4">
+          Multi-Factor Decision Engine
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full space-y-8">
+
+    <!-- Search & Quick Presets Section -->
+    <div class="space-y-4">
+      <div class="relative max-w-3xl mx-auto">
+        <form id="searchForm" class="flex gap-2">
+          <div class="relative flex-grow">
+            <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400"></i>
+            <input 
+              type="text" 
+              id="tickerInput" 
+              placeholder="Enter ticker symbol (e.g. NVDA, GOOGL, VOO, AAPL, MSFT)..." 
+              class="w-full bg-slate-900/90 border border-slate-700/80 rounded-2xl pl-12 pr-4 py-4 text-lg font-medium text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all shadow-inner uppercase tracking-wider"
+              required
+              autocomplete="off"
+            />
+          </div>
+          <button 
+            type="submit" 
+            id="analyzeBtn"
+            class="px-8 py-4 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-bold rounded-2xl transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2 shrink-0 active:scale-95"
+          >
+            <span>Analyze</span>
+            <i data-lucide="arrow-right" class="w-5 h-5"></i>
+          </button>
+        </form>
+      </div>
+
+      <!-- Quick Preset Buttons -->
+      <div class="flex flex-wrap items-center justify-center gap-2 pt-2 text-sm text-slate-400">
+        <span class="text-xs uppercase tracking-wider font-semibold text-slate-500 mr-2">Featured Picks:</span>
+        <button onclick="loadTicker('NVDA')" class="px-3 py-1 rounded-lg bg-slate-900 border border-slate-800 hover:border-emerald-500/50 hover:text-white transition flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-emerald-400"></span> NVDA (NVIDIA)
+        </button>
+        <button onclick="loadTicker('GOOGL')" class="px-3 py-1 rounded-lg bg-slate-900 border border-slate-800 hover:border-emerald-500/50 hover:text-white transition flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-blue-400"></span> GOOGL (Alphabet)
+        </button>
+        <button onclick="loadTicker('VOO')" class="px-3 py-1 rounded-lg bg-slate-900 border border-slate-800 hover:border-emerald-500/50 hover:text-white transition flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-amber-400"></span> VOO (S&P 500 ETF)
+        </button>
+        <button onclick="loadTicker('AAPL')" class="px-3 py-1 rounded-lg bg-slate-900 border border-slate-800 hover:border-emerald-500/50 hover:text-white transition">AAPL</button>
+        <button onclick="loadTicker('MSFT')" class="px-3 py-1 rounded-lg bg-slate-900 border border-slate-800 hover:border-emerald-500/50 hover:text-white transition">MSFT</button>
+        <button onclick="loadTicker('AMZN')" class="px-3 py-1 rounded-lg bg-slate-900 border border-slate-800 hover:border-emerald-500/50 hover:text-white transition">AMZN</button>
+      </div>
+    </div>
+
+    <!-- Loading State Indicator -->
+    <div id="loadingState" class="hidden py-16 text-center space-y-4">
+      <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-slate-800 border-t-emerald-500"></div>
+      <p class="text-slate-400 text-sm tracking-wide">Retrieving live financial filings & executing 100-point algorithm...</p>
+    </div>
+
+    <!-- Error State -->
+    <div id="errorState" class="hidden p-6 rounded-2xl bg-red-500/10 border border-red-500/30 text-center max-w-xl mx-auto space-y-2">
+      <i data-lucide="alert-triangle" class="w-8 h-8 text-red-400 mx-auto"></i>
+      <h3 class="font-bold text-red-200" id="errorTitle">Ticker Not Found</h3>
+      <p class="text-sm text-red-300" id="errorMessage">Unable to fetch metrics for this symbol. Please verify the ticker.</p>
+    </div>
+
+    <!-- Dashboard Content (Populated via JS) -->
+    <div id="dashboard" class="space-y-8">
+      
+      <!-- Company Header Card -->
+      <div class="glass-card rounded-3xl p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div>
+          <div class="flex items-center gap-3">
+            <h1 id="compTicker" class="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">NVDA</h1>
+            <span id="compSector" class="px-3 py-1 rounded-full text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700">Technology</span>
+          </div>
+          <p id="compName" class="text-slate-400 text-base sm:text-lg mt-1">NVIDIA Corporation</p>
+        </div>
+        <div class="flex items-baseline md:items-end flex-col">
+          <div class="flex items-baseline gap-3">
+            <span id="compPrice" class="text-3xl sm:text-4xl font-bold font-mono tracking-tight">$214.13</span>
+            <span id="compChange" class="px-2.5 py-1 rounded-lg text-sm font-semibold font-mono bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">+1.45%</span>
+          </div>
+          <div class="text-xs text-slate-400 mt-1 flex gap-4">
+            <span>Market Cap: <b id="compMarketCap" class="text-slate-200 font-mono">$5.17T</b></span>
+            <span>52W: <b id="comp52W" class="text-slate-200 font-mono">$164 - $243</b></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Algorithmic Verdict Hero Card -->
+      <div id="verdictHero" class="glass-card rounded-3xl p-6 sm:p-8 score-glow border-emerald-500/30">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+          
+          <!-- Score Gauge (Left Col) -->
+          <div class="lg:col-span-4 flex flex-col items-center justify-center p-4 text-center border-b lg:border-b-0 lg:border-r border-slate-800">
+            <div class="relative w-44 h-44 flex items-center justify-center">
+              <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="42" class="text-slate-800" stroke-width="10" stroke="currentColor" fill="transparent" />
+                <circle id="scoreProgressCircle" cx="50" cy="50" r="42" class="text-emerald-500 transition-all duration-1000 ease-out" stroke-width="10" stroke-dasharray="264" stroke-dashoffset="40" stroke-linecap="round" stroke="currentColor" fill="transparent" />
+              </svg>
+              <div class="absolute inset-0 flex flex-col items-center justify-center">
+                <span id="scoreNumber" class="text-5xl font-black font-mono tracking-tighter text-white">82</span>
+                <span class="text-xs text-slate-400 uppercase tracking-widest mt-0.5">/ 100 Score</span>
+              </div>
+            </div>
+            <div id="verdictBadge" class="mt-4 px-4 py-1.5 rounded-full text-sm font-extrabold uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
+              STRONG BUY / ACCUMULATE
+            </div>
+          </div>
+
+          <!-- Rationale & Automated 3-Point Bull/Bear Case (Right Col) -->
+          <div class="lg:col-span-8 space-y-4">
+            <div>
+              <div class="flex items-center justify-between">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1 flex items-center gap-1.5">
+                  <i data-lucide="zap" class="w-3.5 h-3.5 text-amber-400"></i> Executive Decision Snapshot
+                </h3>
+                <span class="text-[10px] font-mono text-slate-400 font-semibold bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700/60">Automated 3-Point Analysis</span>
+              </div>
+              <p id="verdictSummary" class="text-slate-200 text-sm sm:text-base leading-relaxed">
+                Exceptional fundamentals driven by 65% operating margins, dominant CUDA ecosystem moat, and rapid Free Cash Flow expansion.
+              </p>
+            </div>
+
+            <!-- 3-Point Bull Case vs 3-Point Bear Case Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+              <!-- 🟢 Bull Case Card -->
+              <div class="bg-slate-900/80 p-4 rounded-2xl border border-emerald-500/20 space-y-2.5">
+                <div class="flex items-center justify-between border-b border-slate-800/80 pb-2">
+                  <span class="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+                    <i data-lucide="trending-up" class="w-4 h-4 text-emerald-400"></i> 🟢 Bull Case (3 Reasons to Buy)
+                  </span>
+                  <span class="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">WHY BUY</span>
+                </div>
+                <div id="bullCaseList" class="space-y-2 text-xs">
+                  <!-- Populated via JS -->
+                </div>
+              </div>
+
+              <!-- 🔴 Bear Case Card -->
+              <div class="bg-slate-900/80 p-4 rounded-2xl border border-rose-500/20 space-y-2.5">
+                <div class="flex items-center justify-between border-b border-slate-800/80 pb-2">
+                  <span class="text-xs font-bold uppercase tracking-wider text-rose-400 flex items-center gap-1.5">
+                    <i data-lucide="alert-triangle" class="w-4 h-4 text-rose-400"></i> 🔴 Bear Case (3 Key Risks)
+                  </span>
+                  <span class="text-[10px] font-mono font-bold text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20">RISKS</span>
+                </div>
+                <div id="bearCaseList" class="space-y-2 text-xs">
+                  <!-- Populated via JS -->
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- 4 Core Pillars Scorecards -->
+      <div>
+        <h2 class="text-xl font-bold tracking-tight text-white mb-4 flex items-center gap-2">
+          <i data-lucide="layers" class="w-5 h-5 text-emerald-400"></i> The 4 Fundamental Pillars
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          
+          <!-- Pillar 1: Valuation -->
+          <div class="glass-card rounded-2xl p-5 space-y-4">
+            <div class="flex justify-between items-center">
+              <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">1. Valuation & Safety</span>
+              <span id="scoreVal" class="text-sm font-bold font-mono text-emerald-400">22 / 30</span>
+            </div>
+            <div class="w-full bg-slate-800 rounded-full h-2">
+              <div id="barVal" class="bg-emerald-500 h-2 rounded-full" style="width: 73%"></div>
+            </div>
+            <div class="space-y-1.5 text-xs text-slate-300 pt-1">
+              <div class="flex justify-between"><span>Forward P/E:</span><b id="statFwdPE" class="font-mono">17.7x</b></div>
+              <div class="flex justify-between"><span>Trailing P/E:</span><b id="statTrailPE" class="font-mono">27.1x</b></div>
+              <div class="flex justify-between"><span>PEG Ratio:</span><b id="statPEG" class="font-mono">1.12</b></div>
+            </div>
+          </div>
+
+          <!-- Pillar 2: Solvency -->
+          <div class="glass-card rounded-2xl p-5 space-y-4">
+            <div class="flex justify-between items-center">
+              <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">2. Balance Sheet</span>
+              <span id="scoreSol" class="text-sm font-bold font-mono text-emerald-400">24 / 25</span>
+            </div>
+            <div class="w-full bg-slate-800 rounded-full h-2">
+              <div id="barSol" class="bg-emerald-500 h-2 rounded-full" style="width: 96%"></div>
+            </div>
+            <div class="space-y-1.5 text-xs text-slate-300 pt-1">
+              <div class="flex justify-between"><span>Cash Reserves:</span><b id="statCash" class="font-mono">$45.0B</b></div>
+              <div class="flex justify-between"><span>Total Debt:</span><b id="statDebt" class="font-mono">$11.0B</b></div>
+              <div class="flex justify-between"><span>Current Ratio:</span><b id="statCurrRatio" class="font-mono">3.8x</b></div>
+            </div>
+          </div>
+
+          <!-- Pillar 3: Profitability -->
+          <div class="glass-card rounded-2xl p-5 space-y-4">
+            <div class="flex justify-between items-center">
+              <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">3. Moat & Profitability</span>
+              <span id="scoreProf" class="text-sm font-bold font-mono text-emerald-400">24 / 25</span>
+            </div>
+            <div class="w-full bg-slate-800 rounded-full h-2">
+              <div id="barProf" class="bg-emerald-500 h-2 rounded-full" style="width: 96%"></div>
+            </div>
+            <div class="space-y-1.5 text-xs text-slate-300 pt-1">
+              <div class="flex justify-between"><span>Operating Margin:</span><b id="statOperMargin" class="font-mono">65.2%</b></div>
+              <div class="flex justify-between"><span>Gross Margin:</span><b id="statGrossMargin" class="font-mono">75.0%</b></div>
+              <div class="flex justify-between"><span>Free Cash Flow:</span><b id="statFCF" class="font-mono">$127.0B</b></div>
+            </div>
+          </div>
+
+          <!-- Pillar 4: Growth -->
+          <div class="glass-card rounded-2xl p-5 space-y-4">
+            <div class="flex justify-between items-center">
+              <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">4. Growth Velocity</span>
+              <span id="scoreGro" class="text-sm font-bold font-mono text-emerald-400">18 / 20</span>
+            </div>
+            <div class="w-full bg-slate-800 rounded-full h-2">
+              <div id="barGro" class="bg-emerald-500 h-2 rounded-full" style="width: 90%"></div>
+            </div>
+            <div class="space-y-1.5 text-xs text-slate-300 pt-1">
+              <div class="flex justify-between"><span>Revenue YoY:</span><b id="statRevGrowth" class="font-mono">+96.0%</b></div>
+              <div class="flex justify-between"><span>Earnings Growth:</span><b id="statEarnGrowth" class="font-mono">+110.0%</b></div>
+              <div class="flex justify-between"><span>Dividend Yield:</span><b id="statYield" class="font-mono">0.47%</b></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Wall Street 12-Month Price Targets & Analyst Consensus Card -->
+      <div class="glass-card rounded-3xl p-6 sm:p-8 space-y-6">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-800 pb-5">
+          <div>
+            <div class="flex items-center gap-2">
+              <div class="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+                <i data-lucide="crosshair" class="w-4 h-4 text-emerald-400"></i>
+              </div>
+              <h3 class="text-xl font-bold text-white tracking-tight">Wall Street 12-Month Price Targets & Analyst Consensus</h3>
+            </div>
+            <p class="text-xs text-slate-400 mt-1">Institutional 12-month forward price forecasts, calculated upside potential, and Wall Street rating breakdown</p>
+          </div>
+          <div id="analystConsensusBadge" class="flex items-center gap-2">
+            <!-- Dynamic consensus badge rendered via JS -->
+          </div>
+        </div>
+
+        <!-- Target Metrics Highlights Grid -->
+        <div id="analystTargetHighlights" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <!-- Card 1: Consensus Target & Upside -->
+          <div class="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 flex flex-col justify-between space-y-3">
+            <div>
+              <span class="text-[11px] text-slate-400 font-bold uppercase tracking-wider block">Wall Street Average Target</span>
+              <div class="flex items-baseline gap-2 mt-1">
+                <span id="targetMeanVal" class="text-2xl sm:text-3xl font-black font-mono text-white">--</span>
+                <span id="targetUpsideBadge" class="px-2 py-0.5 rounded-lg text-xs font-bold font-mono bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">--%</span>
+              </div>
+            </div>
+            <div class="text-[11px] text-slate-400 flex items-center gap-1.5 pt-1 border-t border-slate-800/60">
+              <i data-lucide="users" class="w-3.5 h-3.5 text-slate-500"></i>
+              <span id="targetAnalystsCount">Based on 0 institutional analyst forecasts</span>
+            </div>
+          </div>
+
+          <!-- Card 2: 12-Month Target Range (Low - Median - High) -->
+          <div class="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 flex flex-col justify-between space-y-3">
+            <div class="flex justify-between items-center">
+              <span class="text-[11px] text-slate-400 font-bold uppercase tracking-wider">12-Month Target Range</span>
+              <span class="text-[10px] text-slate-500 font-mono">Bear ➔ Bull</span>
+            </div>
+
+            <!-- Visual Range Bar -->
+            <div class="space-y-1.5">
+              <div class="relative w-full h-3 rounded-full bg-slate-800 p-0.5">
+                <div class="absolute inset-0 rounded-full bg-gradient-to-r from-rose-500/40 via-amber-500/40 to-emerald-500/40"></div>
+                <!-- Pin marker for current price -->
+                <div id="targetRangePin" class="absolute top-1/2 -translate-y-1/2 -ml-1.5 w-3 h-5 bg-white rounded border border-slate-900 shadow-md transition-all duration-700" style="left: 50%;"></div>
+              </div>
+              <div class="flex justify-between text-[11px] font-mono">
+                <span class="text-rose-400 font-semibold" id="targetLowVal">Low: --</span>
+                <span class="text-slate-300 font-semibold" id="targetMedianVal">Median: --</span>
+                <span class="text-emerald-400 font-semibold" id="targetHighVal">High: --</span>
+              </div>
+            </div>
+
+            <div class="text-[11px] text-slate-400 flex justify-between items-center pt-1 border-t border-slate-800/60 font-mono">
+              <span id="targetLowDiff">Low: --</span>
+              <span id="targetHighDiff" class="text-emerald-400 font-semibold">High: --</span>
+            </div>
+          </div>
+
+          <!-- Card 3: Analyst Sentiment Distribution -->
+          <div class="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 flex flex-col justify-between space-y-3">
+            <div class="flex justify-between items-center">
+              <span class="text-[11px] text-slate-400 font-bold uppercase tracking-wider">Analyst Ratings Breakdown</span>
+              <span id="targetBullishPct" class="text-xs font-bold font-mono text-emerald-400">--% Bullish</span>
+            </div>
+
+            <!-- Stacked Ratings Progress Bar -->
+            <div class="w-full h-3 rounded-full bg-slate-800 flex overflow-hidden">
+              <div id="barStrongBuy" class="bg-emerald-500 h-full transition-all duration-500" style="width: 40%" title="Strong Buy"></div>
+              <div id="barBuy" class="bg-teal-400 h-full transition-all duration-500" style="width: 30%" title="Buy"></div>
+              <div id="barHold" class="bg-amber-400 h-full transition-all duration-500" style="width: 20%" title="Hold"></div>
+              <div id="barSell" class="bg-rose-500 h-full transition-all duration-500" style="width: 10%" title="Sell"></div>
+            </div>
+
+            <!-- Breakdown Pills Grid -->
+            <div class="grid grid-cols-4 gap-1 text-center pt-1 border-t border-slate-800/60 font-mono text-[10px]">
+              <div class="p-1 rounded bg-slate-800/60 text-emerald-300">
+                <span class="block font-black text-xs" id="countStrongBuy">0</span>
+                <span>Str. Buy</span>
+              </div>
+              <div class="p-1 rounded bg-slate-800/60 text-teal-300">
+                <span class="block font-black text-xs" id="countBuy">0</span>
+                <span>Buy</span>
+              </div>
+              <div class="p-1 rounded bg-slate-800/60 text-amber-300">
+                <span class="block font-black text-xs" id="countHold">0</span>
+                <span>Hold</span>
+              </div>
+              <div class="p-1 rounded bg-slate-800/60 text-rose-300">
+                <span class="block font-black text-xs" id="countSell">0</span>
+                <span>Sell</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Institutional Wall Street Insight Box -->
+        <div class="p-4 rounded-2xl bg-slate-900/60 border border-slate-800/80 flex items-start gap-3">
+          <i data-lucide="lightbulb" class="w-5 h-5 text-emerald-400 shrink-0 mt-0.5"></i>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            <b class="text-white">How to Read Wall Street Targets:</b> 12-month price targets represent discounted cash-flow (DCF) models published by major Wall Street research desks (Goldman Sachs, Morgan Stanley, J.P. Morgan, etc.). A consensus target offering <b class="text-emerald-400">+15% or higher upside</b> combined with over <b class="text-emerald-400">70% Buy ratings</b> signals strong institutional consensus, while a target below today's price warns that Wall Street sees limited upside or near-term multiple compression.
+          </p>
+        </div>
+
+        <!-- ETF or Empty State Notice (shown conditionally) -->
+        <div id="analystNoticeBox" class="hidden p-4 rounded-2xl bg-slate-900/90 border border-slate-800 text-center text-xs text-slate-400">
+        </div>
+      </div>
+
+      <!-- Dividend Safety & Health Scorecard -->
+      <div class="glass-card rounded-3xl p-6 sm:p-8 space-y-6">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-800 pb-5">
+          <div>
+            <div class="flex items-center gap-2">
+              <div class="w-8 h-8 rounded-lg bg-teal-500/10 border border-teal-500/20 flex items-center justify-center">
+                <i data-lucide="shield-check" class="w-4 h-4 text-teal-400"></i>
+              </div>
+              <h3 class="text-xl font-bold text-white tracking-tight">Dividend Safety & Income Health Scorecard</h3>
+            </div>
+            <p class="text-xs text-slate-400 mt-1">Cash payout sustainability, payout ratio safety check, dividend king streak, and ex-dividend date</p>
+          </div>
+          <div id="dividendSafetyBadge" class="flex items-center gap-2">
+            <!-- Dynamic safety badge rendered via JS -->
+          </div>
+        </div>
+
+        <!-- Dividend Highlights Grid (Shown when dividend paid) -->
+        <div id="dividendHighlightsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <!-- Card 1: Yield & Annual Cash Check -->
+          <div class="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 flex flex-col justify-between space-y-2">
+            <span class="text-[11px] text-slate-400 font-bold uppercase tracking-wider block">Dividend Yield & Payout</span>
+            <div>
+              <div class="flex items-baseline gap-2">
+                <span id="divYieldVal" class="text-2xl sm:text-3xl font-black font-mono text-emerald-400">--%</span>
+                <span id="divRateVal" class="text-xs font-bold font-mono text-slate-300">($--/yr)</span>
+              </div>
+              <span id="divCashExample" class="text-[11px] text-slate-400 font-mono mt-0.5 block">100 shares = $0/yr cash</span>
+            </div>
+            <div class="text-[10px] text-slate-500 pt-1 border-t border-slate-800/60 font-mono flex justify-between">
+              <span>5Y Avg Yield:</span>
+              <b id="div5YAvg" class="text-slate-300">--%</b>
+            </div>
+          </div>
+
+          <!-- Card 2: Payout Ratio Safety -->
+          <div class="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 flex flex-col justify-between space-y-2">
+            <div class="flex justify-between items-center">
+              <span class="text-[11px] text-slate-400 font-bold uppercase tracking-wider">Payout Ratio</span>
+              <span id="divSafetyTag" class="text-[10px] font-bold font-mono uppercase text-emerald-400">Safe</span>
+            </div>
+            <div>
+              <span id="divPayoutVal" class="text-2xl sm:text-3xl font-black font-mono text-white">--%</span>
+              <div class="w-full bg-slate-800 rounded-full h-2 mt-2 overflow-hidden">
+                <div id="divPayoutBar" class="bg-emerald-500 h-2 rounded-full transition-all duration-700" style="width: 50%"></div>
+              </div>
+            </div>
+            <div class="text-[10px] text-slate-400 pt-1 border-t border-slate-800/60">
+              <span id="divBufferText">Retains earnings for safety buffer</span>
+            </div>
+          </div>
+
+          <!-- Card 3: Increase Streak & Royalty -->
+          <div class="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 flex flex-col justify-between space-y-2">
+            <span class="text-[11px] text-slate-400 font-bold uppercase tracking-wider block">Dividend Royalty</span>
+            <div>
+              <span id="divStreakTitle" class="text-base sm:text-lg font-black text-white block">Regular Dividend</span>
+              <span id="divStreakYears" class="text-xs font-bold font-mono text-emerald-400 mt-0.5 block">0 consecutive years</span>
+            </div>
+            <div class="text-[10px] text-slate-400 pt-1 border-t border-slate-800/60 flex items-center gap-1">
+              <i data-lucide="award" class="w-3.5 h-3.5 text-amber-400"></i>
+              <span id="divStreakContext">Tested through market cycles</span>
+            </div>
+          </div>
+
+          <!-- Card 4: Next Ex-Dividend Date -->
+          <div class="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 flex flex-col justify-between space-y-2">
+            <span class="text-[11px] text-slate-400 font-bold uppercase tracking-wider block">Next Ex-Dividend Date</span>
+            <div>
+              <span id="divExDateVal" class="text-base sm:text-lg font-black text-white block">--</span>
+              <span id="divCountdownVal" class="text-xs font-bold font-mono text-indigo-300 mt-0.5 block">--</span>
+            </div>
+            <div class="text-[10px] text-slate-400 pt-1 border-t border-slate-800/60">
+              <span>Must own before cutoff to receive cash</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Payout Ratio Safety Spectrum Scale -->
+        <div id="divSpectrumSection" class="space-y-2">
+          <div class="flex justify-between items-center text-[11px] font-bold uppercase tracking-wider text-slate-400 pb-1">
+            <span>Payout Ratio Health Scale</span>
+            <span class="text-slate-500 font-normal">SEC Financial Statements (Dividends ÷ Net Income)</span>
+          </div>
+          <div class="flex justify-between text-[11px] font-bold uppercase tracking-wider">
+            <span class="text-emerald-400">🟢 Very Safe (&lt;50%)</span>
+            <span class="text-emerald-300 hidden sm:inline">Healthy (50-65%)</span>
+            <span class="text-amber-400 hidden sm:inline">Moderate (65-80%)</span>
+            <span class="text-rose-400">Yield Trap Danger (&gt;85%+) 🛑</span>
+          </div>
+          <div class="relative w-full h-3 rounded-full bg-slate-800 overflow-hidden flex">
+            <div class="bg-emerald-500/80 h-full" style="width: 50%" title="Safe (&lt;50%)"></div>
+            <div class="bg-emerald-400/80 h-full" style="width: 15%" title="Healthy (50-65%)"></div>
+            <div class="bg-amber-500/80 h-full" style="width: 15%" title="Moderate (65-80%)"></div>
+            <div class="bg-rose-500/80 h-full" style="width: 20%" title="Danger (&gt;80%)"></div>
+          </div>
+        </div>
+
+        <!-- Peter Lynch & Warren Buffett Yield Trap Insight Box -->
+        <div id="divInsightBox" class="p-4 rounded-2xl bg-slate-900/60 border border-slate-800/80 flex items-start gap-3">
+          <i data-lucide="lightbulb" class="w-5 h-5 text-amber-400 shrink-0 mt-0.5"></i>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            <b class="text-white">Yield Trap Rule:</b> Beware of deceptively high dividend yields (e.g. 8%–14%). When a troubled company's stock price crashes, its historical yield mechanically shoots up. If the Payout Ratio exceeds 85% or Free Cash Flow is negative, management will soon cut or suspend the dividend, sending the stock tumbling further. Always prioritize payout safety over high nominal yield.
+          </p>
+        </div>
+
+        <!-- Non-Dividend or ETF Notice Box (Shown when applicable) -->
+        <div id="divNoticeBox" class="hidden p-6 rounded-2xl bg-slate-900/90 border border-slate-800 text-center space-y-2">
+          <!-- Populated dynamically via JS -->
+        </div>
+      </div>
+
+      <!-- Executive & Insider Trading Tracker (SEC Form 4) -->
+      <div class="glass-card rounded-3xl p-6 sm:p-8 space-y-6">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-800 pb-5">
+          <div>
+            <div class="flex items-center gap-2">
+              <div class="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+                <i data-lucide="user-check" class="w-4 h-4 text-emerald-400"></i>
+              </div>
+              <h3 class="text-xl font-bold text-white tracking-tight">Executive & Insider Trading (SEC Form 4)</h3>
+            </div>
+            <p class="text-xs text-slate-400 mt-1">Legally required public filings showing whether CEOs, CFOs, and Directors are buying or selling</p>
+          </div>
+          <div id="insiderSentimentBadge" class="flex items-center gap-2">
+            <!-- Dynamic sentiment badge rendered via JS -->
+          </div>
+        </div>
+
+        <!-- Peter Lynch Golden Quote Box -->
+        <div class="p-4 rounded-2xl bg-slate-900/60 border border-slate-800/80 flex items-start gap-3">
+          <i data-lucide="quote" class="w-5 h-5 text-emerald-400 shrink-0 mt-0.5"></i>
+          <p class="text-xs text-slate-300 italic leading-relaxed">
+            <b class="text-white not-italic">Peter Lynch Principle:</b> "Insiders might sell their shares for any number of reasons (buying a home, taxes, diversification), but they only <b class="text-emerald-400 not-italic">BUY</b> with their own money for one reason: they believe the stock price will go up."
+          </p>
+        </div>
+
+        <!-- Insider Summary Stats & Table -->
+        <div class="space-y-3">
+          <div id="insiderSummaryText" class="text-xs text-slate-300 font-medium">
+            <!-- Dynamic summary text -->
+          </div>
+          
+          <div class="overflow-x-auto rounded-2xl border border-slate-800">
+            <table class="w-full text-left text-xs text-slate-300">
+              <thead class="bg-slate-900/90 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-800">
+                <tr>
+                  <th class="py-3 px-4">Date</th>
+                  <th class="py-3 px-4">Insider & Title</th>
+                  <th class="py-3 px-4">Action</th>
+                  <th class="py-3 px-4 text-right">Shares</th>
+                  <th class="py-3 px-4 text-right">Value ($)</th>
+                </tr>
+              </thead>
+              <tbody id="insiderTableBody" class="divide-y divide-slate-800/60 font-mono">
+                <!-- Dynamically populated rows -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Market Climate & Sentiment (CNN Fear & Greed Index) -->
+      <div class="glass-card rounded-3xl p-6 sm:p-8 space-y-6">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-800 pb-5">
+          <div>
+            <div class="flex items-center gap-2">
+              <div class="w-8 h-8 rounded-lg bg-rose-500/10 border border-rose-500/20 flex items-center justify-center">
+                <i data-lucide="gauge" class="w-4 h-4 text-rose-400"></i>
+              </div>
+              <h3 class="text-xl font-bold text-white tracking-tight">Market Climate & Sentiment (CNN Fear & Greed Index)</h3>
+            </div>
+            <p class="text-xs text-slate-400 mt-1">
+              <span class="text-indigo-400 font-semibold">Macro Market Indicator:</span> Measures the emotional climate of the <b>entire US market</b> (same across all stocks today).
+            </p>
+          </div>
+          <div id="fgScoreBadge" class="flex items-center gap-2">
+            <!-- Rendered via JS -->
+          </div>
+        </div>
+
+        <!-- Fear & Greed Visual Spectrum Bar -->
+        <div class="space-y-2">
+          <div class="flex justify-between items-center text-[11px] font-bold uppercase tracking-wider text-slate-400 pb-1">
+            <span>Sentiment Scale (0 - 100)</span>
+            <span class="text-slate-500 font-normal">Live CNN Dataviz Feed</span>
+          </div>
+
+          <div class="flex justify-between text-[11px] font-bold uppercase tracking-wider">
+            <span class="text-rose-400">😱 Extreme Fear (0-25)</span>
+            <span class="text-amber-400 hidden sm:inline">Fear (25-45)</span>
+            <span class="text-slate-400 hidden sm:inline">Neutral (45-55)</span>
+            <span class="text-emerald-400 hidden sm:inline">Greed (55-75)</span>
+            <span class="text-emerald-300">Extreme Greed (75-100) 🚀</span>
+          </div>
+          
+          <div class="relative w-full h-5 rounded-full bg-gradient-to-r from-rose-600 via-amber-500 via-slate-500 via-emerald-500 to-emerald-400 p-0.5 shadow-inner">
+            <!-- Needle / Marker -->
+            <div id="fgMeterNeedle" class="absolute top-1/2 -translate-y-1/2 -ml-3 w-6 h-8 bg-white rounded-lg border-2 border-slate-900 shadow-2xl transition-all duration-1000 flex items-center justify-center" style="left: 21%;">
+              <div class="w-1 h-4 bg-slate-900 rounded-full"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Warren Buffett Insight Banner -->
+        <div class="p-4 rounded-2xl bg-slate-900/60 border border-slate-800/80 flex items-start gap-3">
+          <i data-lucide="lightbulb" class="w-5 h-5 text-amber-400 shrink-0 mt-0.5"></i>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            <b class="text-white">Warren Buffett Sentiment Principle:</b> "Be fearful when others are greedy, and greedy when others are fearful." When the index is in <b id="fgPrincipleTag" class="text-rose-400 font-mono">Extreme Fear</b>, quality companies are often dumped indiscriminately by emotional investors, creating historically prime entry discounts for long-term compounders.
+          </p>
+        </div>
+
+        <!-- Historical Benchmarks Grid -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
+          <div class="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800 text-center">
+            <span class="text-[11px] text-slate-400 font-bold uppercase tracking-wider block">Previous Close</span>
+            <span id="fgPrevClose" class="text-base font-extrabold font-mono text-slate-200 mt-1 block">19.8</span>
+          </div>
+          <div class="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800 text-center">
+            <span class="text-[11px] text-slate-400 font-bold uppercase tracking-wider block">1 Week Ago</span>
+            <span id="fg1Week" class="text-base font-extrabold font-mono text-slate-200 mt-1 block">22.1</span>
+          </div>
+          <div class="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800 text-center">
+            <span class="text-[11px] text-slate-400 font-bold uppercase tracking-wider block">1 Month Ago</span>
+            <span id="fg1Month" class="text-base font-extrabold font-mono text-slate-200 mt-1 block">32.5</span>
+          </div>
+          <div class="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800 text-center">
+            <span class="text-[11px] text-slate-400 font-bold uppercase tracking-wider block">1 Year Ago</span>
+            <span id="fg1Year" class="text-base font-extrabold font-mono text-slate-200 mt-1 block">27.6</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Upcoming Earnings & Beat/Miss Track Record -->
+      <div class="glass-card rounded-3xl p-6 sm:p-8 space-y-6">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-800 pb-5">
+          <div>
+            <div class="flex items-center gap-2">
+              <div class="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center">
+                <i data-lucide="calendar-clock" class="w-4 h-4 text-indigo-400"></i>
+              </div>
+              <h3 class="text-xl font-bold text-white tracking-tight">Upcoming Earnings & "Beat / Miss" Track Record</h3>
+            </div>
+            <p class="text-xs text-slate-400 mt-1">Next quarterly reporting date, consensus Wall Street estimates, and historical earnings surprise track record</p>
+          </div>
+          <div id="earningsHeaderBadge" class="flex items-center gap-2">
+            <!-- Beat rate badge e.g. 100% Beat Rate (8/8) -->
+          </div>
+        </div>
+
+        <!-- Upcoming Earnings Highlights Bar -->
+        <div id="upcomingEarningsHighlight" class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <!-- Upcoming Date & Countdown -->
+          <div class="p-4 rounded-2xl bg-indigo-950/30 border border-indigo-500/20 flex items-center justify-between">
+            <div>
+              <span class="text-[11px] text-indigo-300 font-bold uppercase tracking-wider block">Upcoming Earnings Date</span>
+              <span id="upcomingDateVal" class="text-lg font-black text-white mt-1 block">--</span>
+              <span id="upcomingCountdownVal" class="text-xs text-indigo-300 font-medium">--</span>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center">
+              <i data-lucide="calendar" class="w-5 h-5 text-indigo-400"></i>
+            </div>
+          </div>
+
+          <!-- Consensus EPS Estimate -->
+          <div class="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 flex items-center justify-between">
+            <div>
+              <span class="text-[11px] text-slate-400 font-bold uppercase tracking-wider block">Consensus EPS Estimate</span>
+              <span id="upcomingEpsEstVal" class="text-lg font-black font-mono text-emerald-400 mt-1 block">--</span>
+              <span class="text-xs text-slate-400">Wall Street consensus</span>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center">
+              <i data-lucide="trending-up" class="w-5 h-5 text-emerald-400"></i>
+            </div>
+          </div>
+
+          <!-- Consensus Revenue Estimate -->
+          <div class="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 flex items-center justify-between">
+            <div>
+              <span class="text-[11px] text-slate-400 font-bold uppercase tracking-wider block">Consensus Revenue Est.</span>
+              <span id="upcomingRevEstVal" class="text-lg font-black font-mono text-cyan-400 mt-1 block">--</span>
+              <span class="text-xs text-slate-400">Expected sales target</span>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center">
+              <i data-lucide="dollar-sign" class="w-5 h-5 text-cyan-400"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- Institutional Wall Street Insight Box -->
+        <div class="p-4 rounded-2xl bg-slate-900/60 border border-slate-800/80 flex items-start gap-3">
+          <i data-lucide="info" class="w-5 h-5 text-indigo-400 shrink-0 mt-0.5"></i>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            <b class="text-white">Why Earnings Beat/Miss Matters:</b> When a company consistently beats quarterly earnings estimates, it signals strong pricing power and conservative management guidance. Conversely, a sharp earnings miss or lowered future guidance can trigger single-day stock plunges of 10%–20%.
+          </p>
+        </div>
+
+        <!-- Historical Earnings Beat/Miss Table -->
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+              <i data-lucide="history" class="w-3.5 h-3.5 text-indigo-400"></i> Last 8 Quarters Beat / Miss History
+            </h4>
+            <div id="earningsStreakBadge" class="text-xs font-mono text-slate-400"></div>
+          </div>
+
+          <div class="overflow-x-auto rounded-2xl border border-slate-800">
+            <table class="w-full text-left text-xs text-slate-300">
+              <thead class="bg-slate-900/90 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-800">
+                <tr>
+                  <th class="py-3 px-4">Report Date</th>
+                  <th class="py-3 px-4 text-right">EPS Estimate</th>
+                  <th class="py-3 px-4 text-right">Reported EPS</th>
+                  <th class="py-3 px-4 text-right">Surprise (%)</th>
+                  <th class="py-3 px-4 text-center">Outcome</th>
+                </tr>
+              </thead>
+              <tbody id="earningsTableBody" class="divide-y divide-slate-800/60 font-mono">
+                <!-- Dynamically populated rows -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Interactive 1-Year Historical Chart -->
+      <div class="glass-card rounded-3xl p-6 sm:p-8 space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <h3 class="text-lg font-bold text-white">1-Year Historical Price Trend</h3>
+            <p class="text-xs text-slate-400">Weekly closing trajectory and valuation context</p>
+          </div>
+          <div class="text-xs font-mono px-3 py-1 bg-slate-800/80 rounded-lg text-slate-300 border border-slate-700">
+            Source: Live Market Feeds
+          </div>
+        </div>
+        <div class="h-64 sm:h-80 w-full">
+          <canvas id="priceChart"></canvas>
+        </div>
+      </div>
+
+      <!-- 13-Year Historical Annual Performance (YoY) -->
+      <div class="glass-card rounded-3xl p-6 sm:p-8 space-y-6">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-800 pb-5">
+          <div>
+            <div class="flex items-center gap-2">
+              <div class="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+                <i data-lucide="bar-chart-2" class="w-4 h-4 text-emerald-400"></i>
+              </div>
+              <h3 class="text-xl font-bold text-white tracking-tight">13-Year Annual Performance (YoY: 2014 – 2026)</h3>
+            </div>
+            <p class="text-xs text-slate-400 mt-1">Calendar year returns, win rates, and compound annual growth rate (CAGR)</p>
+          </div>
+          <div id="annualSummaryBadges" class="flex flex-wrap gap-2">
+            <!-- Dynamic stats generated in JS -->
+          </div>
+        </div>
+
+        <!-- Annual Return Bar Chart -->
+        <div>
+          <div class="h-64 sm:h-72 w-full">
+            <canvas id="annualBarChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Year-by-Year Grid Cards -->
+        <div>
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-1.5">
+            <i data-lucide="calendar" class="w-3.5 h-3.5 text-emerald-400"></i> Annual Returns Breakdown
+          </h4>
+          <div id="annualCardsGrid" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2.5">
+            <!-- Populated via JavaScript -->
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Legal Educational Footer -->
+  <footer class="border-t border-slate-800/80 py-8 bg-slate-950 text-center text-xs text-slate-500 space-y-2">
+    <p>StockPulse is an educational algorithmic due diligence tool. Nothing on this application constitutes registered investment advice.</p>
+    <p>© 2026 StockPulse Engine. Built for fundamental stock analysis.</p>
+  </footer>
+
+  <!-- Application Logic -->
+  <script>
+    let chartInstance = null;
+
+    function formatNumber(num) {
+      if (num === null || num === undefined) return "N/A";
+      if (num >= 1e12) return "$" + (num / 1e12).toFixed(2) + "T";
+      if (num >= 1e9) return "$" + (num / 1e9).toFixed(2) + "B";
+      if (num >= 1e6) return "$" + (num / 1e6).toFixed(2) + "M";
+      return "$" + num.toLocaleString();
+    }
+
+    function formatPct(val) {
+      if (val === null || val === undefined) return "N/A";
+      return (val * 100).toFixed(1) + "%";
+    }
+
+    async function loadTicker(symbol) {
+      document.getElementById('tickerInput').value = symbol;
+      const loading = document.getElementById('loadingState');
+      const dashboard = document.getElementById('dashboard');
+      const errorBox = document.getElementById('errorState');
+
+      loading.classList.remove('hidden');
+      dashboard.classList.add('opacity-40');
+      errorBox.classList.add('hidden');
+
+      try {
+        const response = await fetch(`/api/evaluate/${symbol}`);
+        if (!response.ok) {
+          throw new Error('Failed to retrieve evaluation data');
+        }
+        const data = await response.json();
+        renderDashboard(data);
+      } catch (err) {
+        errorBox.classList.remove('hidden');
+        document.getElementById('errorMessage').innerText = err.message || 'Symbol could not be analyzed.';
+      } finally {
+        loading.classList.add('hidden');
+        dashboard.classList.remove('opacity-40');
+      }
+    }
+
+    function renderDashboard(data) {
+      const evalData = data.evaluation;
+      const m = evalData.key_metrics;
+      const pillars = evalData.pillars;
+
+      // Header
+      document.getElementById('compTicker').innerText = evalData.ticker;
+      document.getElementById('compName').innerText = evalData.name;
+      document.getElementById('compSector').innerText = m.sector || "Equities";
+      document.getElementById('compPrice').innerText = "$" + m.price.toFixed(2);
+      
+      const changeEl = document.getElementById('compChange');
+      changeEl.innerText = (m.change_pct >= 0 ? "+" : "") + m.change_pct.toFixed(2) + "%";
+      if (m.change_pct >= 0) {
+        changeEl.className = "px-2.5 py-1 rounded-lg text-sm font-semibold font-mono bg-emerald-500/20 text-emerald-400 border border-emerald-500/30";
+      } else {
+        changeEl.className = "px-2.5 py-1 rounded-lg text-sm font-semibold font-mono bg-red-500/20 text-red-400 border border-red-500/30";
+      }
+
+      document.getElementById('compMarketCap').innerText = formatNumber(m.market_cap);
+      document.getElementById('comp52W').innerText = `$${m.fifty_two_week_low?.toFixed(0) || 0} - $${m.fifty_two_week_high?.toFixed(0) || 0}`;
+
+      // Score Gauge
+      const score = evalData.total_score;
+      document.getElementById('scoreNumber').innerText = Math.round(score);
+      const circle = document.getElementById('scoreProgressCircle');
+      const circumference = 264;
+      const offset = circumference - (score / 100) * circumference;
+      circle.style.strokeDashoffset = offset;
+
+      // Verdict & Styling
+      const hero = document.getElementById('verdictHero');
+      const badge = document.getElementById('verdictBadge');
+      badge.innerText = evalData.verdict;
+      document.getElementById('verdictSummary').innerText = evalData.summary;
+
+      if (evalData.verdict_color === 'emerald') {
+        circle.className = "text-emerald-500 transition-all duration-1000 ease-out";
+        badge.className = "mt-4 px-4 py-1.5 rounded-full text-sm font-extrabold uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/40";
+        hero.style.borderColor = "rgba(16, 185, 129, 0.35)";
+      } else if (evalData.verdict_color === 'blue') {
+        circle.className = "text-blue-500 transition-all duration-1000 ease-out";
+        badge.className = "mt-4 px-4 py-1.5 rounded-full text-sm font-extrabold uppercase tracking-wider bg-blue-500/20 text-blue-400 border border-blue-500/40";
+        hero.style.borderColor = "rgba(59, 130, 246, 0.35)";
+      } else if (evalData.verdict_color === 'amber') {
+        circle.className = "text-amber-500 transition-all duration-1000 ease-out";
+        badge.className = "mt-4 px-4 py-1.5 rounded-full text-sm font-extrabold uppercase tracking-wider bg-amber-500/20 text-amber-400 border border-amber-500/40";
+        hero.style.borderColor = "rgba(245, 158, 11, 0.35)";
+      } else {
+        circle.className = "text-rose-500 transition-all duration-1000 ease-out";
+        badge.className = "mt-4 px-4 py-1.5 rounded-full text-sm font-extrabold uppercase tracking-wider bg-rose-500/20 text-rose-400 border border-rose-500/40";
+        hero.style.borderColor = "rgba(244, 63, 94, 0.35)";
+      }
+
+      // Render Automated 3-Point Bull/Bear Case
+      renderBullBearCases(data.bull_bear_cases, evalData);
+
+      // 4 Pillars Stats
+      document.getElementById('scoreVal').innerText = `${pillars.valuation.score} / ${pillars.valuation.max}`;
+      document.getElementById('barVal').style.width = (pillars.valuation.score / pillars.valuation.max * 100) + "%";
+      document.getElementById('statFwdPE').innerText = m.forward_pe ? m.forward_pe.toFixed(1) + "x" : "N/A";
+      document.getElementById('statTrailPE').innerText = m.trailing_pe ? m.trailing_pe.toFixed(1) + "x" : "N/A";
+      document.getElementById('statPEG').innerText = m.peg_ratio ? m.peg_ratio.toFixed(2) : "N/A";
+
+      document.getElementById('scoreSol').innerText = `${pillars.solvency.score} / ${pillars.solvency.max}`;
+      document.getElementById('barSol').style.width = (pillars.solvency.score / pillars.solvency.max * 100) + "%";
+      document.getElementById('statCash').innerText = formatNumber(m.total_cash);
+      document.getElementById('statDebt').innerText = formatNumber(m.total_debt);
+      document.getElementById('statCurrRatio').innerText = m.current_ratio ? m.current_ratio.toFixed(1) + "x" : "N/A";
+
+      document.getElementById('scoreProf').innerText = `${pillars.profitability.score} / ${pillars.profitability.max}`;
+      document.getElementById('barProf').style.width = (pillars.profitability.score / pillars.profitability.max * 100) + "%";
+      document.getElementById('statOperMargin').innerText = formatPct(m.operating_margin);
+      document.getElementById('statGrossMargin').innerText = formatPct(m.gross_margin);
+      document.getElementById('statFCF').innerText = formatNumber(m.free_cash_flow);
+
+      document.getElementById('scoreGro').innerText = `${pillars.growth.score} / ${pillars.growth.max}`;
+      document.getElementById('barGro').style.width = (pillars.growth.score / pillars.growth.max * 100) + "%";
+      document.getElementById('statRevGrowth').innerText = formatPct(m.revenue_growth);
+      document.getElementById('statEarnGrowth').innerText = formatPct(m.earnings_growth);
+      document.getElementById('statYield').innerText = formatPct(m.dividend_yield);
+
+      // Render Charts & Modules
+      renderChart(data.history, evalData.ticker);
+      renderAnnualPerformance(data.annual_returns, evalData.ticker);
+      renderAnalystTargets(data.analyst_targets, evalData.ticker);
+      renderDividendScorecard(data.dividend_data, evalData.ticker);
+      renderInsiderTrading(data.insider_activity, evalData.ticker);
+      renderMarketSentiment(data.market_sentiment);
+      renderEarningsTrackRecord(data.earnings_data, evalData.ticker);
+      lucide.createIcons();
+    }
+
+    function renderMarketSentiment(sentiment) {
+      if (!sentiment) return;
+      
+      const score = Math.min(Math.max(sentiment.score || 50, 0), 100);
+      const rating = sentiment.rating || "Neutral";
+      const emoji = sentiment.emoji || "😐";
+
+      // 1. Update Top Navbar Pill
+      const navText = document.getElementById('navSentimentText');
+      const navDot = document.getElementById('navSentimentDot');
+      if (navText && navDot) {
+        navText.innerText = `${emoji} ${rating} (${Math.round(score)})`;
+        if (score < 25) {
+          navText.className = "text-rose-400 font-bold";
+          navDot.className = "w-2 h-2 rounded-full bg-rose-500 animate-pulse";
+        } else if (score < 45) {
+          navText.className = "text-amber-400 font-bold";
+          navDot.className = "w-2 h-2 rounded-full bg-amber-500 animate-pulse";
+        } else if (score <= 55) {
+          navText.className = "text-slate-300 font-bold";
+          navDot.className = "w-2 h-2 rounded-full bg-slate-400";
+        } else {
+          navText.className = "text-emerald-400 font-bold";
+          navDot.className = "w-2 h-2 rounded-full bg-emerald-500 animate-pulse";
+        }
+      }
+
+      // 2. Update Card Badge
+      const badge = document.getElementById('fgScoreBadge');
+      if (badge) {
+        let badgeColor = "bg-rose-500/20 text-rose-400 border-rose-500/40";
+        if (score >= 25 && score < 45) badgeColor = "bg-amber-500/20 text-amber-400 border-amber-500/40";
+        else if (score >= 45 && score <= 55) badgeColor = "bg-slate-800 text-slate-300 border-slate-700";
+        else if (score > 55) badgeColor = "bg-emerald-500/20 text-emerald-400 border-emerald-500/40";
+
+        badge.innerHTML = `<span class="px-4 py-1.5 rounded-full text-sm font-extrabold font-mono uppercase tracking-wider border ${badgeColor}">${emoji} ${rating.toUpperCase()} (${score}/100)</span>`;
+      }
+
+      // 3. Update Meter Needle Position
+      const needle = document.getElementById('fgMeterNeedle');
+      if (needle) {
+        needle.style.left = `${score}%`;
+      }
+
+      // 4. Update Tag in quote
+      const tag = document.getElementById('fgPrincipleTag');
+      if (tag) {
+        tag.innerText = `${rating} (${score})`;
+        tag.className = score < 25 ? "text-rose-400 font-mono" : (score > 55 ? "text-emerald-400 font-mono" : "text-amber-400 font-mono");
+      }
+
+      // 5. Update Historical Benchmarks
+      document.getElementById('fgPrevClose').innerText = sentiment.previous_close !== undefined ? sentiment.previous_close : "—";
+      document.getElementById('fg1Week').innerText = sentiment.previous_1_week !== undefined ? sentiment.previous_1_week : "—";
+      document.getElementById('fg1Month').innerText = sentiment.previous_1_month !== undefined ? sentiment.previous_1_month : "—";
+      document.getElementById('fg1Year').innerText = sentiment.previous_1_year !== undefined ? sentiment.previous_1_year : "—";
+    }
+
+    function renderInsiderTrading(insiderData, ticker) {
+      const badge = document.getElementById('insiderSentimentBadge');
+      const summaryText = document.getElementById('insiderSummaryText');
+      const tableBody = document.getElementById('insiderTableBody');
+
+      if (!insiderData || !insiderData.transactions || insiderData.transactions.length === 0) {
+        badge.innerHTML = `<span class="px-3 py-1 rounded-full text-xs font-bold font-mono bg-slate-800 text-slate-400 border border-slate-700">NO RECENT FILINGS</span>`;
+        summaryText.innerText = "No SEC Form 4 insider transactions recorded in the past 6 months (typical for broad index ETFs or closely-held shares).";
+        tableBody.innerHTML = `<tr><td colspan="5" class="py-4 text-center text-slate-500">No recent Form 4 insider transactions available</td></tr>`;
+        return;
+      }
+
+      // Render Badge based on sentiment
+      if (insiderData.sentiment === 'bullish') {
+        badge.innerHTML = `<span class="px-3 py-1 rounded-full text-xs font-bold font-mono bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">🟢 NET INSIDER BUYING (BULLISH)</span>`;
+      } else if (insiderData.sentiment === 'routine_selling') {
+        badge.innerHTML = `<span class="px-3 py-1 rounded-full text-xs font-bold font-mono bg-amber-500/20 text-amber-400 border border-amber-500/40">🟡 ROUTINE EXECUTIVE SELLING (RSUs)</span>`;
+      } else {
+        badge.innerHTML = `<span class="px-3 py-1 rounded-full text-xs font-bold font-mono bg-slate-800 text-slate-300 border border-slate-700">⚪ EQUITY AWARDS / NEUTRAL</span>`;
+      }
+
+      summaryText.innerText = insiderData.summary;
+
+      // Render rows
+      tableBody.innerHTML = insiderData.transactions.map(tx => {
+        let actionBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-400 border border-slate-700">GRANT</span>`;
+        if (tx.type === 'BUY') {
+          actionBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 font-mono">BUY (OPEN MARKET)</span>`;
+        } else if (tx.type === 'SALE') {
+          actionBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-400 border border-rose-500/40 font-mono">SALE</span>`;
+        }
+
+        const formattedVal = tx.value > 0 ? formatNumber(tx.value) : "—";
+        const formattedShares = tx.shares > 0 ? tx.shares.toLocaleString() : "—";
+
+        return `
+          <tr class="hover:bg-slate-900/40 transition">
+            <td class="py-2.5 px-4 text-slate-400">${tx.date || 'Recent'}</td>
+            <td class="py-2.5 px-4 font-sans"><b class="text-white">${tx.name}</b> <span class="text-slate-400 text-[11px]">(${tx.position})</span></td>
+            <td class="py-2.5 px-4">${actionBadge}</td>
+            <td class="py-2.5 px-4 text-right text-slate-300">${formattedShares}</td>
+            <td class="py-2.5 px-4 text-right text-slate-200 font-bold">${formattedVal}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function renderBullBearCases(bullBear, evalData) {
+      const bullListEl = document.getElementById('bullCaseList');
+      const bearListEl = document.getElementById('bearCaseList');
+      if (!bullListEl || !bearListEl) return;
+
+      const bulls = (bullBear && bullBear.bull_case && bullBear.bull_case.length > 0) 
+        ? bullBear.bull_case 
+        : (evalData.pros || []).slice(0, 3).map((p, i) => ({ title: `Key Strength #${i+1}`, desc: p }));
+
+      const bears = (bullBear && bullBear.bear_case && bullBear.bear_case.length > 0) 
+        ? bullBear.bear_case 
+        : (evalData.cons || []).slice(0, 3).map((c, i) => ({ title: `Risk Factor #${i+1}`, desc: c }));
+
+      bullListEl.innerHTML = bulls.map((b, idx) => `
+        <div class="p-2.5 rounded-xl bg-slate-950/50 border border-emerald-500/15 hover:border-emerald-500/30 transition">
+          <div class="font-bold text-white flex items-center gap-1.5 text-xs">
+            <span class="text-emerald-400 font-mono font-black text-xs">${idx + 1}.</span>
+            <span>${b.title}</span>
+          </div>
+          <p class="text-[11px] text-slate-300 mt-1 leading-relaxed pl-3.5">
+            ${b.desc}
+          </p>
+        </div>
+      `).join('');
+
+      bearListEl.innerHTML = bears.map((b, idx) => `
+        <div class="p-2.5 rounded-xl bg-slate-950/50 border border-rose-500/15 hover:border-rose-500/30 transition">
+          <div class="font-bold text-white flex items-center gap-1.5 text-xs">
+            <span class="text-rose-400 font-mono font-black text-xs">${idx + 1}.</span>
+            <span>${b.title}</span>
+          </div>
+          <p class="text-[11px] text-slate-300 mt-1 leading-relaxed pl-3.5">
+            ${b.desc}
+          </p>
+        </div>
+      `).join('');
+    }
+
+    function renderAnalystTargets(analystData, ticker) {
+      const badge = document.getElementById('analystConsensusBadge');
+      const highlights = document.getElementById('analystTargetHighlights');
+      const noticeBox = document.getElementById('analystNoticeBox');
+
+      const targetMeanVal = document.getElementById('targetMeanVal');
+      const targetUpsideBadge = document.getElementById('targetUpsideBadge');
+      const targetAnalystsCount = document.getElementById('targetAnalystsCount');
+
+      const targetLowVal = document.getElementById('targetLowVal');
+      const targetMedianVal = document.getElementById('targetMedianVal');
+      const targetHighVal = document.getElementById('targetHighVal');
+      const targetLowDiff = document.getElementById('targetLowDiff');
+      const targetHighDiff = document.getElementById('targetHighDiff');
+      const targetRangePin = document.getElementById('targetRangePin');
+
+      const targetBullishPct = document.getElementById('targetBullishPct');
+      const barStrongBuy = document.getElementById('barStrongBuy');
+      const barBuy = document.getElementById('barBuy');
+      const barHold = document.getElementById('barHold');
+      const barSell = document.getElementById('barSell');
+
+      const countStrongBuy = document.getElementById('countStrongBuy');
+      const countBuy = document.getElementById('countBuy');
+      const countHold = document.getElementById('countHold');
+      const countSell = document.getElementById('countSell');
+
+      if (!analystData || analystData.is_etf) {
+        badge.innerHTML = `<span class="px-3 py-1 rounded-full text-xs font-bold font-mono bg-slate-800 text-slate-400 border border-slate-700">INDEX ETF (NOT APPLICABLE)</span>`;
+        highlights.classList.add('hidden');
+        noticeBox.classList.remove('hidden');
+        noticeBox.innerHTML = `
+          <div class="flex items-center justify-center gap-2 text-slate-300 font-semibold mb-1">
+            <i data-lucide="info" class="w-4 h-4 text-slate-400"></i> Broad Market Index ETF
+          </div>
+          <p class="text-slate-400">Broad index ETFs (like ${ticker}) track hundreds of individual corporations simultaneously and do not receive single-stock analyst price targets or buy/sell recommendations.</p>
+        `;
+        return;
+      }
+
+      if (!analystData.has_targets) {
+        badge.innerHTML = `<span class="px-3 py-1 rounded-full text-xs font-bold font-mono bg-slate-800 text-slate-400 border border-slate-700">NO TARGETS RECORDED</span>`;
+        highlights.classList.add('hidden');
+        noticeBox.classList.remove('hidden');
+        noticeBox.innerHTML = `<p class="text-slate-400">${analystData.message || 'No active analyst price targets currently published for ' + ticker + '.'}</p>`;
+        return;
+      }
+
+      highlights.classList.remove('hidden');
+      noticeBox.classList.add('hidden');
+
+      // 1. Consensus Badge
+      const consensusLabel = analystData.consensus_label || "Hold";
+      const recScore = analystData.recommendation_score ? `(${analystData.recommendation_score.toFixed(2)} / 5.0)` : "";
+      let badgeStyle = "bg-amber-500/20 text-amber-400 border-amber-500/40";
+      let icon = "🟡";
+
+      if (analystData.consensus_color === "emerald") {
+        badgeStyle = "bg-emerald-500/20 text-emerald-400 border-emerald-500/40";
+        icon = "🟢";
+      } else if (analystData.consensus_color === "rose") {
+        badgeStyle = "bg-rose-500/20 text-rose-400 border-rose-500/40";
+        icon = "🔴";
+      }
+      badge.innerHTML = `<span class="px-4 py-1.5 rounded-full text-xs sm:text-sm font-extrabold font-mono uppercase tracking-wider border ${badgeStyle}">${icon} ${consensusLabel.toUpperCase()} ${recScore}</span>`;
+
+      // 2. Average Target & Upside
+      const meanVal = analystData.target_mean !== null ? `$${analystData.target_mean.toFixed(2)}` : "—";
+      targetMeanVal.innerText = meanVal;
+
+      const upside = analystData.upside_pct || 0;
+      if (upside > 0) {
+        targetUpsideBadge.innerText = `+${upside.toFixed(1)}% Upside`;
+        targetUpsideBadge.className = "px-2.5 py-1 rounded-lg text-xs font-bold font-mono bg-emerald-500/20 text-emerald-400 border border-emerald-500/40";
+      } else if (upside < 0) {
+        targetUpsideBadge.innerText = `${upside.toFixed(1)}% Downside`;
+        targetUpsideBadge.className = "px-2.5 py-1 rounded-lg text-xs font-bold font-mono bg-rose-500/20 text-rose-400 border border-rose-500/40";
+      } else {
+        targetUpsideBadge.innerText = `0.0% Fair Value`;
+        targetUpsideBadge.className = "px-2.5 py-1 rounded-lg text-xs font-bold font-mono bg-slate-800 text-slate-300 border border-slate-700";
+      }
+
+      const count = analystData.analysts_count || 0;
+      targetAnalystsCount.innerText = `Based on ${count} institutional Wall Street analyst forecasts`;
+
+      // 3. Target Range (Low, Median, High)
+      targetLowVal.innerText = analystData.target_low ? `Low: $${analystData.target_low.toFixed(2)}` : "Low: —";
+      targetMedianVal.innerText = analystData.target_median ? `Median: $${analystData.target_median.toFixed(2)}` : "Median: —";
+      targetHighVal.innerText = analystData.target_high ? `High: $${analystData.target_high.toFixed(2)}` : "High: —";
+
+      const lowDiff = analystData.low_downside_pct || 0;
+      targetLowDiff.innerText = `Bear case: ${lowDiff > 0 ? '+' : ''}${lowDiff.toFixed(1)}%`;
+      targetLowDiff.className = lowDiff < 0 ? "text-rose-400 font-semibold" : "text-slate-400";
+
+      const highDiff = analystData.high_upside_pct || 0;
+      targetHighDiff.innerText = `Bull case: +${highDiff.toFixed(1)}%`;
+
+      const posPct = Math.max(5, Math.min(95, analystData.range_pos_pct || 50));
+      targetRangePin.style.left = `${posPct}%`;
+
+      // 4. Breakdown & Distribution Bar
+      const bd = analystData.breakdown || {};
+      const tot = bd.total || count || 1;
+      const sb = bd.strong_buy || 0;
+      const b = bd.buy || 0;
+      const h = bd.hold || 0;
+      const s = (bd.sell || 0) + (bd.strong_sell || 0);
+
+      const sbPct = tot > 0 ? ((sb / tot) * 100) : 0;
+      const bPct = tot > 0 ? ((b / tot) * 100) : 0;
+      const hPct = tot > 0 ? ((h / tot) * 100) : 0;
+      const sPct = tot > 0 ? ((s / tot) * 100) : 0;
+
+      barStrongBuy.style.width = `${sbPct}%`;
+      barBuy.style.width = `${bPct}%`;
+      barHold.style.width = `${hPct}%`;
+      barSell.style.width = `${sPct}%`;
+
+      countStrongBuy.innerText = sb;
+      countBuy.innerText = b;
+      countHold.innerText = h;
+      countSell.innerText = s;
+
+      const bullPct = bd.bullish_pct !== undefined ? bd.bullish_pct : (tot > 0 ? Math.round(((sb + b) / tot) * 100) : 0);
+      targetBullishPct.innerText = `${bullPct}% Bullish`;
+      if (bullPct >= 70) {
+        targetBullishPct.className = "text-xs font-bold font-mono text-emerald-400";
+      } else if (bullPct >= 50) {
+        targetBullishPct.className = "text-xs font-bold font-mono text-amber-400";
+      } else {
+        targetBullishPct.className = "text-xs font-bold font-mono text-rose-400";
+      }
+    }
+
+    function renderDividendScorecard(dividendData, ticker) {
+      const badge = document.getElementById('dividendSafetyBadge');
+      const grid = document.getElementById('dividendHighlightsGrid');
+      const spectrum = document.getElementById('divSpectrumSection');
+      const insight = document.getElementById('divInsightBox');
+      const noticeBox = document.getElementById('divNoticeBox');
+
+      const yieldVal = document.getElementById('divYieldVal');
+      const rateVal = document.getElementById('divRateVal');
+      const cashExample = document.getElementById('divCashExample');
+      const fiveYAvg = document.getElementById('div5YAvg');
+
+      const payoutVal = document.getElementById('divPayoutVal');
+      const safetyTag = document.getElementById('divSafetyTag');
+      const payoutBar = document.getElementById('divPayoutBar');
+      const bufferText = document.getElementById('divBufferText');
+
+      const streakTitle = document.getElementById('divStreakTitle');
+      const streakYears = document.getElementById('divStreakYears');
+      const streakContext = document.getElementById('divStreakContext');
+
+      const exDateVal = document.getElementById('divExDateVal');
+      const countdownVal = document.getElementById('divCountdownVal');
+
+      if (!dividendData) return;
+
+      // 1. Non-Dividend Paying Stock
+      if (!dividendData.pays_dividend && !dividendData.is_etf) {
+        badge.innerHTML = `<span class="px-3 py-1 rounded-full text-xs font-bold font-mono bg-slate-800 text-slate-300 border border-slate-700">⚪ PURE GROWTH (0.0% YIELD)</span>`;
+        grid.classList.add('hidden');
+        spectrum.classList.add('hidden');
+        insight.classList.add('hidden');
+        noticeBox.classList.remove('hidden');
+        noticeBox.innerHTML = `
+          <div class="flex items-center justify-center gap-2 text-white font-bold text-sm">
+            <i data-lucide="zap" class="w-4 h-4 text-amber-400"></i> Pure Growth & Capital Reinvestment Stock
+          </div>
+          <p class="text-xs text-slate-400 max-w-xl mx-auto leading-relaxed">
+            ${ticker} pays 0% in dividends. Management retains and compounds 100% of profits internally into research, development, and high-return business expansion rather than distributing cash.
+          </p>
+        `;
+        return;
+      }
+
+      // 2. Broad Index ETF
+      if (dividendData.is_etf) {
+        badge.innerHTML = `<span class="px-3 py-1 rounded-full text-xs font-bold font-mono bg-blue-500/20 text-blue-400 border border-blue-500/40 font-mono">🔷 INDEX ETF (${dividendData.dividend_yield}% YIELD)</span>`;
+        grid.classList.remove('hidden');
+        spectrum.classList.add('hidden');
+        insight.classList.remove('hidden');
+        noticeBox.classList.add('hidden');
+
+        yieldVal.innerText = `${dividendData.dividend_yield}%`;
+        rateVal.innerText = dividendData.annual_payout ? `($${dividendData.annual_payout.toFixed(2)}/yr)` : "";
+        cashExample.innerText = dividendData.annual_payout ? `100 shares = $${(dividendData.annual_payout * 100).toFixed(2)} cash/yr` : "Blended index payouts";
+        fiveYAvg.innerText = "N/A";
+
+        payoutVal.innerText = "Blended";
+        safetyTag.innerText = "Very Safe";
+        safetyTag.className = "text-[10px] font-bold font-mono uppercase text-emerald-400";
+        payoutBar.style.width = "40%";
+        payoutBar.className = "bg-blue-500 h-2 rounded-full";
+        bufferText.innerText = "Passed through from 500 constituent companies";
+
+        streakTitle.innerText = "🏛️ S&P 500 Index";
+        streakYears.innerText = "Continuous Quarterly Distributions";
+        streakContext.innerText = "Backed by largest US enterprises";
+
+        exDateVal.innerText = "Quarterly Distribution";
+        countdownVal.innerText = "Mar, Jun, Sep, Dec";
+        return;
+      }
+
+      // 3. Regular Dividend Stock
+      grid.classList.remove('hidden');
+      spectrum.classList.remove('hidden');
+      insight.classList.remove('hidden');
+      noticeBox.classList.add('hidden');
+
+      // Badge
+      let badgeStyle = "bg-emerald-500/20 text-emerald-400 border-emerald-500/40";
+      let icon = "🟢";
+      if (dividendData.safety_color === "rose") {
+        badgeStyle = "bg-rose-500/20 text-rose-400 border-rose-500/40";
+        icon = "🔴";
+      } else if (dividendData.safety_color === "amber" || dividendData.safety_color === "orange") {
+        badgeStyle = "bg-amber-500/20 text-amber-400 border-amber-500/40";
+        icon = "🟡";
+      }
+      badge.innerHTML = `<span class="px-4 py-1.5 rounded-full text-xs sm:text-sm font-extrabold font-mono uppercase tracking-wider border ${badgeStyle}">${icon} ${dividendData.safety_label.toUpperCase()}</span>`;
+
+      // Yield & Payout
+      yieldVal.innerText = `${dividendData.dividend_yield}%`;
+      rateVal.innerText = dividendData.annual_payout ? `($${dividendData.annual_payout.toFixed(2)}/yr)` : "";
+      cashExample.innerText = dividendData.annual_payout ? `100 shares = $${(dividendData.annual_payout * 100).toFixed(2)} cash/yr` : "";
+      fiveYAvg.innerText = dividendData.five_year_avg_yield ? `${dividendData.five_year_avg_yield.toFixed(2)}%` : "N/A";
+
+      // Payout Ratio
+      const pPct = dividendData.payout_ratio_pct;
+      payoutVal.innerText = pPct !== null ? `${pPct}%` : "—";
+      safetyTag.innerText = dividendData.safety_label.split(' ')[0];
+      
+      const barW = Math.min(Math.max(pPct || 50, 5), 100);
+      payoutBar.style.width = `${barW}%`;
+      if (barW > 85) {
+        payoutBar.className = "bg-rose-500 h-2 rounded-full";
+        safetyTag.className = "text-[10px] font-bold font-mono uppercase text-rose-400";
+      } else if (barW > 65) {
+        payoutBar.className = "bg-amber-500 h-2 rounded-full";
+        safetyTag.className = "text-[10px] font-bold font-mono uppercase text-amber-400";
+      } else {
+        payoutBar.className = "bg-emerald-500 h-2 rounded-full";
+        safetyTag.className = "text-[10px] font-bold font-mono uppercase text-emerald-400";
+      }
+      bufferText.innerText = dividendData.safety_desc || "Healthy profit coverage";
+
+      // Streak
+      streakTitle.innerText = dividendData.streak_title;
+      streakYears.innerText = `${dividendData.streak_years} Consecutive Years of Hikes`;
+      streakContext.innerText = dividendData.streak_years >= 25 ? "Proven through 2008 & 2020 crashes" : "Tested through economic cycles";
+
+      // Ex-Dividend Date
+      exDateVal.innerText = dividendData.ex_dividend_date || "Pending Announcement";
+      if (dividendData.days_until !== null && dividendData.days_until !== undefined) {
+        if (dividendData.days_until > 0) {
+          countdownVal.innerText = `⏳ In ${dividendData.days_until} days`;
+          countdownVal.className = "text-xs font-bold font-mono text-indigo-300 mt-0.5 block";
+        } else if (dividendData.days_until === 0) {
+          countdownVal.innerText = `🚨 Ex-Dividend Cutoff Today`;
+          countdownVal.className = "text-xs font-bold font-mono text-amber-400 mt-0.5 block";
+        } else {
+          countdownVal.innerText = `Recently paid (${Math.abs(dividendData.days_until)}d ago)`;
+          countdownVal.className = "text-xs font-medium font-mono text-slate-400 mt-0.5 block";
+        }
+      } else {
+        countdownVal.innerText = "Date unconfirmed";
+        countdownVal.className = "text-xs font-medium font-mono text-slate-400 mt-0.5 block";
+      }
+    }
+
+    function renderEarningsTrackRecord(earnings, ticker) {
+      const headerBadge = document.getElementById('earningsHeaderBadge');
+      const upcomingDateEl = document.getElementById('upcomingDateVal');
+      const upcomingCountdownEl = document.getElementById('upcomingCountdownVal');
+      const upcomingEpsEl = document.getElementById('upcomingEpsEstVal');
+      const upcomingRevEl = document.getElementById('upcomingRevEstVal');
+      const streakBadge = document.getElementById('earningsStreakBadge');
+      const tableBody = document.getElementById('earningsTableBody');
+
+      if (!earnings || earnings.is_etf) {
+        headerBadge.innerHTML = `<span class="px-3 py-1 rounded-full text-xs font-bold font-mono bg-slate-800 text-slate-400 border border-slate-700">INDEX ETF (NOT APPLICABLE)</span>`;
+        upcomingDateEl.innerText = "N/A (Broad Index ETF)";
+        upcomingCountdownEl.innerText = "ETFs hold baskets of stocks";
+        upcomingEpsEl.innerText = "—";
+        upcomingRevEl.innerText = "—";
+        streakBadge.innerText = "";
+        tableBody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-slate-500 font-sans">Broad market ETFs (like ${ticker}) hold hundreds of individual securities and do not report quarterly company earnings.</td></tr>`;
+        return;
+      }
+
+      if (!earnings.has_earnings) {
+        headerBadge.innerHTML = `<span class="px-3 py-1 rounded-full text-xs font-bold font-mono bg-slate-800 text-slate-400 border border-slate-700">NO DATA RECORDED</span>`;
+        upcomingDateEl.innerText = "TBD";
+        upcomingCountdownEl.innerText = "Date unconfirmed";
+        upcomingEpsEl.innerText = "—";
+        upcomingRevEl.innerText = "—";
+        streakBadge.innerText = "";
+        tableBody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-slate-500 font-sans">No quarterly earnings history or consensus estimates found for ${ticker}.</td></tr>`;
+        return;
+      }
+
+      // 1. Render Header Badge based on stats
+      const stats = earnings.stats;
+      if (stats && stats.total_quarters > 0) {
+        const beatRate = stats.beat_rate_pct;
+        let badgeColor = "bg-emerald-500/20 text-emerald-400 border-emerald-500/40";
+        let icon = "🟢";
+        if (beatRate < 60) {
+          badgeColor = "bg-rose-500/20 text-rose-400 border-rose-500/40";
+          icon = "🔴";
+        } else if (beatRate < 80) {
+          badgeColor = "bg-amber-500/20 text-amber-400 border-amber-500/40";
+          icon = "🟡";
+        }
+        headerBadge.innerHTML = `<span class="px-3 py-1 rounded-full text-xs font-bold font-mono border ${badgeColor}">${icon} ${beatRate}% BEAT RATE (${stats.beats}/${stats.total_quarters} QTRS)</span>`;
+        streakBadge.innerText = `Streak: ${stats.streak}`;
+      } else {
+        headerBadge.innerHTML = `<span class="px-3 py-1 rounded-full text-xs font-bold font-mono bg-slate-800 text-slate-300 border border-slate-700">EARNINGS TRACKER</span>`;
+        streakBadge.innerText = "";
+      }
+
+      // 2. Upcoming Earnings details
+      const up = earnings.upcoming;
+      if (up && up.date) {
+        upcomingDateEl.innerText = up.date;
+        if (up.days_until !== null && up.days_until !== undefined) {
+          if (up.days_until > 0) {
+            upcomingCountdownEl.innerText = `⏳ In ${up.days_until} days`;
+            upcomingCountdownEl.className = "text-xs text-indigo-300 font-medium font-mono";
+          } else if (up.days_until === 0) {
+            upcomingCountdownEl.innerText = `🚨 Reporting Today`;
+            upcomingCountdownEl.className = "text-xs text-amber-400 font-bold font-mono";
+          } else {
+            upcomingCountdownEl.innerText = `Recently reported (${Math.abs(up.days_until)}d ago)`;
+            upcomingCountdownEl.className = "text-xs text-slate-400 font-medium font-mono";
+          }
+        } else {
+          upcomingCountdownEl.innerText = "Date projected by analysts";
+        }
+
+        upcomingEpsEl.innerText = up.eps_estimate !== null && up.eps_estimate !== undefined ? `$${up.eps_estimate.toFixed(2)}` : "—";
+        upcomingRevEl.innerText = up.revenue_estimate ? formatNumber(up.revenue_estimate) : "—";
+      } else {
+        upcomingDateEl.innerText = "Date TBD";
+        upcomingCountdownEl.innerText = "Pending company release";
+        upcomingEpsEl.innerText = "—";
+        upcomingRevEl.innerText = "—";
+      }
+
+      // 3. Historical Quarters Table
+      const hist = earnings.history || [];
+      if (hist.length === 0) {
+        tableBody.innerHTML = `<tr><td colspan="5" class="py-4 text-center text-slate-500">No quarterly reported history available.</td></tr>`;
+      } else {
+        tableBody.innerHTML = hist.map(q => {
+          let outcomeBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-400 border border-slate-700">REPORTED</span>`;
+          if (q.result === 'beat') {
+            outcomeBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 font-mono">BEAT 🟢</span>`;
+          } else if (q.result === 'miss') {
+            outcomeBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-400 border border-rose-500/40 font-mono">MISS 🔴</span>`;
+          } else if (q.result === 'met') {
+            outcomeBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-300 border border-slate-700 font-mono">IN-LINE ⚪</span>`;
+          }
+
+          let surpDisplay = `<span class="text-slate-500">—</span>`;
+          if (q.surprise_pct !== null && q.surprise_pct !== undefined) {
+            if (q.surprise_pct > 0) {
+              surpDisplay = `<span class="text-emerald-400 font-bold font-mono">+${q.surprise_pct.toFixed(2)}%</span>`;
+            } else if (q.surprise_pct < 0) {
+              surpDisplay = `<span class="text-rose-400 font-bold font-mono">${q.surprise_pct.toFixed(2)}%</span>`;
+            } else {
+              surpDisplay = `<span class="text-slate-400 font-bold font-mono">0.00%</span>`;
+            }
+          }
+
+          const estText = q.eps_estimate !== null && q.eps_estimate !== undefined ? `$${q.eps_estimate.toFixed(2)}` : "—";
+          const repText = q.reported_eps !== null && q.reported_eps !== undefined ? `$${q.reported_eps.toFixed(2)}` : "—";
+
+          return `
+            <tr class="hover:bg-slate-900/40 transition">
+              <td class="py-2.5 px-4 text-slate-300 font-sans"><b class="text-white">${q.date}</b></td>
+              <td class="py-2.5 px-4 text-right text-slate-400 font-mono">${estText}</td>
+              <td class="py-2.5 px-4 text-right text-slate-100 font-bold font-mono">${repText}</td>
+              <td class="py-2.5 px-4 text-right">${surpDisplay}</td>
+              <td class="py-2.5 px-4 text-center">${outcomeBadge}</td>
+            </tr>
+          `;
+        }).join('');
+      }
+    }
+
+    let annualChartInstance = null;
+
+    function renderAnnualPerformance(annualReturns, ticker) {
+      if (!annualReturns || annualReturns.length === 0) return;
+      
+      const years = annualReturns.map(a => a.year);
+      const returns = annualReturns.map(a => a.return_pct);
+
+      // Compute Summary Stats
+      const winCount = returns.filter(r => r > 0).length;
+      const totalCount = returns.length;
+      const winRate = Math.round((winCount / totalCount) * 100);
+
+      let bestYear = annualReturns[0];
+      let worstYear = annualReturns[0];
+      let compoundMultiplier = 1.0;
+
+      annualReturns.forEach(item => {
+        if (item.return_pct > bestYear.return_pct) bestYear = item;
+        if (item.return_pct < worstYear.return_pct) worstYear = item;
+        compoundMultiplier *= (1 + (item.return_pct / 100));
+      });
+
+      const cagr = ((Math.pow(Math.max(compoundMultiplier, 0.01), 1 / totalCount) - 1) * 100).toFixed(1);
+
+      // Render Summary Badges
+      const badgesContainer = document.getElementById('annualSummaryBadges');
+      badgesContainer.innerHTML = `
+        <div class="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 flex items-center gap-2">
+          <span class="text-slate-400">13-Yr Compound (CAGR):</span>
+          <b class="text-emerald-400 font-mono">+${cagr}%/yr</b>
+        </div>
+        <div class="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 flex items-center gap-2">
+          <span class="text-slate-400">Win Rate:</span>
+          <b class="text-slate-200 font-mono">${winCount}/${totalCount} (${winRate}%)</b>
+        </div>
+        <div class="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 flex items-center gap-2">
+          <span class="text-slate-400">Best Year:</span>
+          <b class="text-emerald-400 font-mono">+${bestYear.return_pct.toFixed(1)}% ('${String(bestYear.year).slice(2)})</b>
+        </div>
+        <div class="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 flex items-center gap-2">
+          <span class="text-slate-400">Worst Year:</span>
+          <b class="text-rose-400 font-mono">${worstYear.return_pct.toFixed(1)}% ('${String(worstYear.year).slice(2)})</b>
+        </div>
+      `;
+
+      // Render Cards Grid
+      const cardsGrid = document.getElementById('annualCardsGrid');
+      cardsGrid.innerHTML = annualReturns.map(item => {
+        const isPos = item.return_pct >= 0;
+        const colorClass = isPos ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' : 'text-rose-400 bg-rose-500/10 border-rose-500/20';
+        return `
+          <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800 text-center space-y-1">
+            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">${item.year}</span>
+            <div class="text-sm font-extrabold font-mono px-2 py-0.5 rounded-lg border ${colorClass}">
+              ${isPos ? '+' : ''}${item.return_pct.toFixed(1)}%
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Render Bar Chart
+      const ctx = document.getElementById('annualBarChart').getContext('2d');
+      if (annualChartInstance) {
+        annualChartInstance.destroy();
+      }
+
+      const bgColors = returns.map(r => r >= 0 ? 'rgba(16, 185, 129, 0.85)' : 'rgba(244, 63, 94, 0.85)');
+      const borderColors = returns.map(r => r >= 0 ? '#10b981' : '#f43f5e');
+
+      annualChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: years,
+          datasets: [{
+            label: `${ticker} Annual Return (%)`,
+            data: returns,
+            backgroundColor: bgColors,
+            borderColor: borderColors,
+            borderWidth: 1.5,
+            borderRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#0f172a',
+              borderColor: '#334155',
+              borderWidth: 1,
+              titleColor: '#94a3b8',
+              bodyColor: '#ffffff',
+              callbacks: {
+                label: (ctx) => `${ctx.parsed.y >= 0 ? '+' : ''}${ctx.parsed.y.toFixed(1)}% Annual Return`
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: { display: false },
+              ticks: { color: '#64748b' }
+            },
+            y: {
+              grid: { color: 'rgba(255, 255, 255, 0.05)' },
+              ticks: {
+                color: '#64748b',
+                callback: (val) => val + '%'
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function renderChart(history, ticker) {
+      if (!history || history.length === 0) return;
+      const ctx = document.getElementById('priceChart').getContext('2d');
+      
+      const labels = history.map(h => h.date);
+      const prices = history.map(h => h.price);
+
+      if (chartInstance) {
+        chartInstance.destroy();
+      }
+
+      chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: `${ticker} Price ($)`,
+            data: prices,
+            borderColor: '#10b981',
+            backgroundColor: 'rgba(16, 185, 129, 0.08)',
+            fill: true,
+            tension: 0.3,
+            borderWidth: 2.5,
+            pointRadius: 1,
+            pointHoverRadius: 5
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#0f172a',
+              borderColor: '#334155',
+              borderWidth: 1,
+              titleColor: '#94a3b8',
+              bodyColor: '#ffffff',
+              callbacks: {
+                label: (ctx) => `$${ctx.parsed.y.toFixed(2)}`
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: { color: 'rgba(255, 255, 255, 0.04)' },
+              ticks: { color: '#64748b', maxTicksLimit: 8 }
+            },
+            y: {
+              grid: { color: 'rgba(255, 255, 255, 0.04)' },
+              ticks: {
+                color: '#64748b',
+                callback: (val) => '$' + val
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // Form Event Listener
+    document.getElementById('searchForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const val = document.getElementById('tickerInput').value.trim();
+      if (val) loadTicker(val);
+    });
+
+    // Initial Load with NVDA
+    window.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      loadTicker('NVDA');
+    });
+  </script>
+</body>
+</html>
