@@ -21,7 +21,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
+STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
 os.makedirs(STATIC_DIR, exist_ok=True)
 
 @app.get("/api/evaluate/{ticker}")
