@@ -6,6 +6,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 import os
+import requests
 
 from data_fetcher import get_stock_data, get_fear_and_greed_index
 from engine import evaluate_stock
@@ -52,6 +53,46 @@ async def evaluate_ticker_endpoint(ticker: str):
         "bull_bear_cases": data.get("bull_bear_cases", {}),
         "dividend_data": data.get("dividend_data", {})
     }
+
+@app.get("/api/search")
+async def search_endpoint(q: str = ""):
+    """
+    Autocomplete endpoint supporting ticker symbols and company names.
+    Returns clean matches with symbol, name, and asset type.
+    """
+    clean_q = q.strip()
+    if not clean_q or len(clean_q) < 1:
+        return []
+
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    }
+    url = f"https://query2.finance.yahoo.com/v1/finance/search?q={clean_q}&quotesCount=10&newsCount=0"
+    results = []
+    try:
+        r = requests.get(url, headers=headers, timeout=3)
+        if r.status_code == 200:
+            data = r.json()
+            for item in data.get("quotes", []):
+                sym = item.get("symbol", "")
+                qtype = item.get("quoteType", "")
+                exch = item.get("exchange", "")
+                
+                # Filter for equities and ETFs, prioritize primary US symbols without dots
+                if qtype in ["EQUITY", "ETF"] and "=" not in sym and "^" not in sym:
+                    is_primary = ("." not in sym) or sym in ["BRK.B", "BF.B"]
+                    results.append({
+                        "symbol": sym,
+                        "name": item.get("shortname") or item.get("longname") or sym,
+                        "type": "ETF" if qtype == "ETF" else "Stock",
+                        "exchange": exch,
+                        "is_primary": is_primary
+                    })
+            results.sort(key=lambda x: not x.get("is_primary", True))
+    except Exception as e:
+        print(f"Error searching tickers for '{clean_q}': {e}")
+
+    return results[:7]
 
 @app.get("/api/market-sentiment")
 async def market_sentiment_endpoint():

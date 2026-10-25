@@ -81,16 +81,23 @@
             <input 
               type="text" 
               id="tickerInput" 
-              placeholder="Enter ticker symbol (e.g. NVDA, GOOGL, VOO, AAPL, MSFT)..." 
-              class="w-full bg-slate-900/90 border border-slate-700/80 rounded-2xl pl-12 pr-4 py-4 text-lg font-medium text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all shadow-inner uppercase tracking-wider"
+              placeholder="Search company name or ticker (e.g. Apple, Coca-Cola, Nike, NVDA)..." 
+              class="w-full bg-slate-900/90 border border-slate-700/80 rounded-2xl pl-12 pr-4 py-4 text-base sm:text-lg font-medium text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all shadow-inner tracking-wide"
               required
               autocomplete="off"
             />
+            <!-- Live Autocomplete Dropdown -->
+            <div 
+              id="searchDropdown" 
+              class="hidden absolute left-0 right-0 top-full mt-2 bg-slate-900/95 backdrop-blur-xl border border-slate-700/90 rounded-2xl shadow-2xl overflow-hidden z-50 divide-y divide-slate-800/80 max-h-80 overflow-y-auto"
+            >
+              <!-- Populated via JS -->
+            </div>
           </div>
           <button 
             type="submit" 
             id="analyzeBtn"
-            class="px-8 py-4 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-bold rounded-2xl transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2 shrink-0 active:scale-95"
+            class="px-6 sm:px-8 py-4 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-bold rounded-2xl transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2 shrink-0 active:scale-95"
           >
             <span>Analyze</span>
             <i data-lucide="arrow-right" class="w-5 h-5"></i>
@@ -1645,8 +1652,194 @@
     // Form Event Listener
     document.getElementById('searchForm').addEventListener('submit', (e) => {
       e.preventDefault();
+      searchDropdown.classList.add('hidden');
       const val = document.getElementById('tickerInput').value.trim();
       if (val) loadTicker(val);
+    });
+
+    // --- Smart Search Autocomplete Controller ---
+    const TOP_DIRECTORY = [
+      { symbol: "NVDA", name: "NVIDIA Corporation", type: "Stock", exchange: "NASDAQ" },
+      { symbol: "AAPL", name: "Apple Inc.", type: "Stock", exchange: "NASDAQ" },
+      { symbol: "MSFT", name: "Microsoft Corporation", type: "Stock", exchange: "NASDAQ" },
+      { symbol: "GOOGL", name: "Alphabet Inc. (Class A)", type: "Stock", exchange: "NASDAQ" },
+      { symbol: "AMZN", name: "Amazon.com Inc.", type: "Stock", exchange: "NASDAQ" },
+      { symbol: "META", name: "Meta Platforms, Inc.", type: "Stock", exchange: "NASDAQ" },
+      { symbol: "TSLA", name: "Tesla, Inc.", type: "Stock", exchange: "NASDAQ" },
+      { symbol: "VOO", name: "Vanguard S&P 500 ETF", type: "ETF", exchange: "NYSE" },
+      { symbol: "SPY", name: "SPDR S&P 500 ETF Trust", type: "ETF", exchange: "NYSE" },
+      { symbol: "QQQ", name: "Invesco QQQ Trust (Nasdaq 100)", type: "ETF", exchange: "NASDAQ" },
+      { symbol: "KO", name: "The Coca-Cola Company", type: "Stock", exchange: "NYSE" },
+      { symbol: "PEP", name: "PepsiCo, Inc.", type: "Stock", exchange: "NASDAQ" },
+      { symbol: "NKE", name: "NIKE, Inc.", type: "Stock", exchange: "NYSE" },
+      { symbol: "MCD", name: "McDonald's Corporation", type: "Stock", exchange: "NYSE" },
+      { symbol: "SBUX", name: "Starbucks Corporation", type: "Stock", exchange: "NASDAQ" },
+      { symbol: "WMT", name: "Walmart Inc.", type: "Stock", exchange: "NYSE" },
+      { symbol: "COST", name: "Costco Wholesale Corporation", type: "Stock", exchange: "NASDAQ" },
+      { symbol: "PG", name: "Procter & Gamble Company", type: "Stock", exchange: "NYSE" },
+      { symbol: "JNJ", name: "Johnson & Johnson", type: "Stock", exchange: "NYSE" },
+      { symbol: "JPM", name: "JPMorgan Chase & Co.", type: "Stock", exchange: "NYSE" },
+      { symbol: "V", name: "Visa Inc.", type: "Stock", exchange: "NYSE" },
+      { symbol: "MA", name: "Mastercard Incorporated", type: "Stock", exchange: "NYSE" },
+      { symbol: "AMD", name: "Advanced Micro Devices, Inc.", type: "Stock", exchange: "NASDAQ" },
+      { symbol: "NFLX", name: "Netflix, Inc.", type: "Stock", exchange: "NASDAQ" },
+      { symbol: "DIS", name: "The Walt Disney Company", type: "Stock", exchange: "NYSE" },
+      { symbol: "BRK.B", name: "Berkshire Hathaway Inc.", type: "Stock", exchange: "NYSE" },
+      { symbol: "XOM", name: "Exxon Mobil Corporation", type: "Stock", exchange: "NYSE" },
+      { symbol: "CVX", name: "Chevron Corporation", type: "Stock", exchange: "NYSE" },
+      { symbol: "LLY", name: "Eli Lilly and Company", type: "Stock", exchange: "NYSE" },
+      { symbol: "UNH", name: "UnitedHealth Group Incorporated", type: "Stock", exchange: "NYSE" },
+      { symbol: "SCHD", name: "Schwab US Dividend Equity ETF", type: "ETF", exchange: "NYSE" },
+      { symbol: "O", name: "Realty Income Corporation", type: "Stock", exchange: "NYSE" },
+      { symbol: "HD", name: "The Home Depot, Inc.", type: "Stock", exchange: "NYSE" },
+      { symbol: "CRM", name: "Salesforce, Inc.", type: "Stock", exchange: "NYSE" },
+      { symbol: "UBER", name: "Uber Technologies, Inc.", type: "Stock", exchange: "NYSE" },
+      { symbol: "PLTR", name: "Palantir Technologies Inc.", type: "Stock", exchange: "NASDAQ" },
+      { symbol: "AVGO", name: "Broadcom Inc.", type: "Stock", exchange: "NASDAQ" },
+      { symbol: "ORCL", name: "Oracle Corporation", type: "Stock", exchange: "NYSE" },
+      { symbol: "INTC", name: "Intel Corporation", type: "Stock", exchange: "NASDAQ" },
+      { symbol: "QCOM", name: "QUALCOMM Incorporated", type: "Stock", exchange: "NASDAQ" },
+      { symbol: "DECK", name: "Deckers Outdoor Corporation (HOKA)", type: "Stock", exchange: "NYSE" },
+      { symbol: "LULU", name: "Lululemon Athletica Inc.", type: "Stock", exchange: "NASDAQ" },
+      { symbol: "ONON", name: "On Holding AG (On Running)", type: "Stock", exchange: "NYSE" }
+    ];
+
+    let searchDebounceTimer = null;
+    let selectedDropdownIndex = -1;
+    let currentSearchResults = [];
+
+    const tickerInput = document.getElementById('tickerInput');
+    const searchDropdown = document.getElementById('searchDropdown');
+
+    function renderDropdown(items, query) {
+      if (!items || items.length === 0) {
+        searchDropdown.classList.add('hidden');
+        searchDropdown.innerHTML = '';
+        currentSearchResults = [];
+        selectedDropdownIndex = -1;
+        return;
+      }
+
+      currentSearchResults = items;
+      selectedDropdownIndex = -1;
+
+      searchDropdown.innerHTML = items.map((item, idx) => `
+        <div 
+          data-index="${idx}"
+          class="dropdown-item p-3.5 hover:bg-slate-800/80 active:bg-slate-800 cursor-pointer transition flex items-center justify-between gap-3 text-left"
+          onmousedown="selectSearchResult('${item.symbol}')"
+        >
+          <div class="flex items-center gap-3 min-w-0">
+            <span class="px-2.5 py-1 rounded-lg text-xs font-black font-mono bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shrink-0">
+              ${item.symbol}
+            </span>
+            <div class="min-w-0">
+              <span class="block text-sm font-semibold text-white truncate">${item.name}</span>
+              <span class="block text-[11px] text-slate-400 font-mono">${item.exchange || 'US Market'}</span>
+            </div>
+          </div>
+          <span class="px-2 py-0.5 rounded text-[10px] font-bold font-mono uppercase shrink-0 ${item.type === 'ETF' ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' : 'bg-slate-800 text-slate-400 border border-slate-700'}">
+            ${item.type || 'Stock'}
+          </span>
+        </div>
+      `).join('');
+
+      searchDropdown.classList.remove('hidden');
+    }
+
+    function selectSearchResult(symbol) {
+      tickerInput.value = symbol;
+      searchDropdown.classList.add('hidden');
+      searchDropdown.innerHTML = '';
+      currentSearchResults = [];
+      loadTicker(symbol);
+    }
+
+    async function handleSearchInput(e) {
+      const q = e.target.value.trim().toLowerCase();
+      if (!q) {
+        searchDropdown.classList.add('hidden');
+        searchDropdown.innerHTML = '';
+        return;
+      }
+
+      // 1. Instant local matching from TOP_DIRECTORY (<1ms)
+      const localMatches = TOP_DIRECTORY.filter(item => 
+        item.symbol.toLowerCase().includes(q) || item.name.toLowerCase().includes(q)
+      ).slice(0, 5);
+
+      if (localMatches.length > 0) {
+        renderDropdown(localMatches, q);
+      }
+
+      // 2. Debounced query to /api/search for broader live universe
+      clearTimeout(searchDebounceTimer);
+      searchDebounceTimer = setTimeout(async () => {
+        try {
+          const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
+          if (res.ok) {
+            const serverMatches = await res.json();
+            // Merge unique symbols (local matches first)
+            const seen = new Set(localMatches.map(m => m.symbol));
+            const merged = [...localMatches];
+            for (const sm of serverMatches) {
+              if (!seen.has(sm.symbol)) {
+                seen.add(sm.symbol);
+                merged.push(sm);
+              }
+            }
+            if (tickerInput.value.trim().length > 0) {
+              renderDropdown(merged.slice(0, 6), q);
+            }
+          }
+        } catch (err) {
+          console.warn('Autocomplete fetch failed:', err);
+        }
+      }, 150);
+    }
+
+    tickerInput.addEventListener('input', handleSearchInput);
+
+    // Keyboard Arrow Navigation
+    tickerInput.addEventListener('keydown', (e) => {
+      const items = searchDropdown.querySelectorAll('.dropdown-item');
+      if (searchDropdown.classList.contains('hidden') || items.length === 0) return;
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        selectedDropdownIndex = (selectedDropdownIndex + 1) % items.length;
+        updateDropdownHighlight(items);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        selectedDropdownIndex = (selectedDropdownIndex - 1 + items.length) % items.length;
+        updateDropdownHighlight(items);
+      } else if (e.key === 'Enter') {
+        if (selectedDropdownIndex >= 0 && selectedDropdownIndex < currentSearchResults.length) {
+          e.preventDefault();
+          selectSearchResult(currentSearchResults[selectedDropdownIndex].symbol);
+        }
+      } else if (e.key === 'Escape') {
+        searchDropdown.classList.add('hidden');
+      }
+    });
+
+    function updateDropdownHighlight(items) {
+      items.forEach((item, idx) => {
+        if (idx === selectedDropdownIndex) {
+          item.classList.add('bg-slate-800');
+          item.classList.remove('hover:bg-slate-800/80');
+        } else {
+          item.classList.remove('bg-slate-800');
+          item.classList.add('hover:bg-slate-800/80');
+        }
+      });
+    }
+
+    // Close dropdown on click outside
+    document.addEventListener('click', (e) => {
+      if (!tickerInput.contains(e.target) && !searchDropdown.contains(e.target)) {
+        searchDropdown.classList.add('hidden');
+      }
     });
 
     // Initial Load with NVDA
