@@ -43,6 +43,9 @@ FALLBACK_METRICS: Dict[str, Dict[str, Any]] = {
         "dividend_yield": 0.0047,
         "fifty_two_week_high": 243.37,
         "fifty_two_week_low": 164.27,
+        "beta": 1.68,
+        "fifty_day_average": 198.50,
+        "two_hundred_day_average": 182.20,
         "is_etf": False,
         "annual_returns": [
             {"year": 2014, "return_pct": 25.4},
@@ -86,6 +89,9 @@ FALLBACK_METRICS: Dict[str, Dict[str, Any]] = {
         "dividend_yield": 0.0025,
         "fifty_two_week_high": 355.20,
         "fifty_two_week_low": 210.15,
+        "beta": 1.05,
+        "fifty_day_average": 328.00,
+        "two_hundred_day_average": 305.50,
         "is_etf": False,
         "annual_returns": [
             {"year": 2014, "return_pct": -5.4},
@@ -129,6 +135,9 @@ FALLBACK_METRICS: Dict[str, Dict[str, Any]] = {
         "dividend_yield": 0.0104,
         "fifty_two_week_high": 718.47,
         "fifty_two_week_low": 578.46,
+        "beta": 1.00,
+        "fifty_day_average": 685.20,
+        "two_hundred_day_average": 650.00,
         "is_etf": True,
         "annual_returns": [
             {"year": 2014, "return_pct": 13.5},
@@ -144,6 +153,52 @@ FALLBACK_METRICS: Dict[str, Dict[str, Any]] = {
             {"year": 2024, "return_pct": 25.0},
             {"year": 2025, "return_pct": 16.8},
             {"year": 2026, "return_pct": 12.4}
+        ]
+    },
+    "KO": {
+        "ticker": "KO",
+        "name": "The Coca-Cola Company",
+        "sector": "Consumer Defensive",
+        "industry": "Beverages - Non-Alcoholic",
+        "price": 68.45,
+        "change_pct": 0.35,
+        "market_cap": 294000000000,
+        "trailing_pe": 26.80,
+        "forward_pe": 23.20,
+        "peg_ratio": 3.10,
+        "gross_margin": 0.605,
+        "operating_margin": 0.295,
+        "return_on_equity": 0.41,
+        "revenue_growth": 0.05,
+        "earnings_growth": 0.07,
+        "total_cash": 15500000000,
+        "total_debt": 41000000000,
+        "ebitda": 15200000000,
+        "free_cash_flow": 10500000000,
+        "fcf_yield": 0.0357,
+        "current_ratio": 1.15,
+        "dividend_rate": 2.04,
+        "dividend_yield": 0.0298,
+        "fifty_two_week_high": 73.50,
+        "fifty_two_week_low": 58.40,
+        "beta": 0.55,
+        "fifty_day_average": 66.80,
+        "two_hundred_day_average": 64.50,
+        "is_etf": False,
+        "annual_returns": [
+            {"year": 2014, "return_pct": 5.3},
+            {"year": 2015, "return_pct": 5.2},
+            {"year": 2016, "return_pct": -0.4},
+            {"year": 2017, "return_pct": 14.2},
+            {"year": 2018, "return_pct": 5.8},
+            {"year": 2019, "return_pct": 20.6},
+            {"year": 2020, "return_pct": 0.5},
+            {"year": 2021, "return_pct": 10.6},
+            {"year": 2022, "return_pct": 10.6},
+            {"year": 2023, "return_pct": -4.4},
+            {"year": 2024, "return_pct": 14.8},
+            {"year": 2025, "return_pct": 9.2},
+            {"year": 2026, "return_pct": 8.0}
         ]
     }
 }
@@ -1236,6 +1291,9 @@ def get_stock_data(ticker_symbol: str) -> Dict[str, Any]:
                 "dividend_yield": (float(info.get("dividendYield", 0) or 0) / 100.0) if float(info.get("dividendYield", 0) or 0) > 0.30 else float(info.get("dividendYield", 0) or 0),
                 "fifty_two_week_high": float(info.get("fiftyTwoWeekHigh", 0) or 0),
                 "fifty_two_week_low": float(info.get("fiftyTwoWeekLow", 0) or 0),
+                "beta": float(info.get("beta")) if info.get("beta") is not None else (1.68 if symbol == "NVDA" else (0.55 if symbol == "KO" else (1.0 if is_etf else 1.15))),
+                "fifty_day_average": float(info.get("fiftyDayAverage")) if info.get("fiftyDayAverage") else None,
+                "two_hundred_day_average": float(info.get("twoHundredDayAverage")) if info.get("twoHundredDayAverage") else None,
                 "is_etf": is_etf
             }
             

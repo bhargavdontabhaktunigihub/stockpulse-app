@@ -413,6 +413,296 @@
         </div>
       </div>
 
+      <!-- Execution & Risk Management Center: Anti-Blowup Position Sizer & 3-Tranche Buy Entry Planner -->
+      <div id="executionCenterCard" class="glass-card rounded-3xl p-6 sm:p-8 space-y-8">
+        
+        <!-- Header -->
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-800 pb-5">
+          <div>
+            <div class="flex items-center gap-2">
+              <div class="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center">
+                <i data-lucide="crosshair" class="w-4 h-4 text-indigo-400"></i>
+              </div>
+              <h3 class="text-xl font-bold text-white tracking-tight">Execution & Risk Management Center</h3>
+            </div>
+            <p class="text-xs text-slate-400 mt-1">Smart position sizing to prevent portfolio blowups and 3-tranche limit order execution roadmap</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="px-3.5 py-1.5 rounded-full text-xs font-black font-mono uppercase tracking-wider bg-indigo-500/20 text-indigo-300 border border-indigo-500/40">
+              INSTITUTIONAL EXECUTION
+            </span>
+          </div>
+        </div>
+
+        <!-- SUB-SECTION 1: Anti-Blowup Position Sizer -->
+        <div class="space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <h4 class="text-base font-bold text-white flex items-center gap-2">
+                <span class="w-6 h-6 rounded-md bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-xs font-mono text-emerald-300 font-bold">1</span>
+                <span>Anti-Blowup Position Sizer</span>
+              </h4>
+              <p class="text-xs text-slate-400 mt-0.5">Calculates safe portfolio ceiling using Beta (volatility), debt load, and valuation multiple</p>
+            </div>
+            <div id="sizerBetaBadge" class="text-xs font-mono text-slate-300">
+              <!-- Beta rating badge -->
+            </div>
+          </div>
+
+          <!-- Position Sizer Input Controls -->
+          <div class="p-4 sm:p-5 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+              
+              <!-- Total Portfolio Input -->
+              <div class="md:col-span-7 space-y-2">
+                <label class="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                  <i data-lucide="pie-chart" class="w-3.5 h-3.5 text-indigo-400"></i> Total Net Worth / Investment Portfolio
+                </label>
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <div class="flex items-center gap-1">
+                    <button type="button" onclick="setPortfolioSize(5000)" class="port-size-btn px-2.5 py-1 rounded-lg text-xs font-bold font-mono border border-slate-700 bg-slate-800 text-slate-300 hover:border-indigo-500 transition" data-size="5000">$5k</button>
+                    <button type="button" onclick="setPortfolioSize(10000)" class="port-size-btn px-2.5 py-1 rounded-lg text-xs font-bold font-mono border border-indigo-500/50 bg-indigo-500/20 text-indigo-300 transition" data-size="10000">$10k</button>
+                    <button type="button" onclick="setPortfolioSize(25000)" class="port-size-btn px-2.5 py-1 rounded-lg text-xs font-bold font-mono border border-slate-700 bg-slate-800 text-slate-300 hover:border-indigo-500 transition" data-size="25000">$25k</button>
+                    <button type="button" onclick="setPortfolioSize(50000)" class="port-size-btn px-2.5 py-1 rounded-lg text-xs font-bold font-mono border border-slate-700 bg-slate-800 text-slate-300 hover:border-indigo-500 transition" data-size="50000">$50k</button>
+                  </div>
+                  <div class="relative flex items-center">
+                    <span class="absolute left-2.5 text-xs font-mono text-slate-400">$</span>
+                    <input type="number" id="portfolioCustomInput" value="10000" min="500" max="10000000" step="500"
+                      oninput="onPortfolioCustomInputChange(this.value)"
+                      class="w-28 pl-6 pr-2 py-1 text-xs font-bold font-mono rounded-lg bg-slate-950 border border-slate-700 text-white focus:outline-none focus:border-indigo-500">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Risk Tolerance -->
+              <div class="md:col-span-5 space-y-2">
+                <label class="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                  <i data-lucide="shield" class="w-3.5 h-3.5 text-emerald-400"></i> Risk Profile
+                </label>
+                <div class="flex items-center gap-1.5">
+                  <button type="button" onclick="setRiskProfile('conservative')" class="risk-prof-btn px-2.5 py-1 rounded-lg text-xs font-bold font-mono border border-slate-700 bg-slate-800 text-slate-300 hover:border-emerald-500 transition" data-profile="conservative">Defensive</button>
+                  <button type="button" onclick="setRiskProfile('balanced')" class="risk-prof-btn px-2.5 py-1 rounded-lg text-xs font-bold font-mono border border-emerald-500/50 bg-emerald-500/20 text-emerald-300 transition" data-profile="balanced">Compounder</button>
+                  <button type="button" onclick="setRiskProfile('aggressive')" class="risk-prof-btn px-2.5 py-1 rounded-lg text-xs font-bold font-mono border border-slate-700 bg-slate-800 text-slate-300 hover:border-emerald-500 transition" data-profile="aggressive">Growth</button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Position Sizing Output Cards -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+            <!-- Card 1: Recommended Safe Allocation -->
+            <div class="p-4 rounded-2xl bg-emerald-950/20 border border-emerald-500/30 flex flex-col justify-between space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-[11px] text-emerald-300 font-bold uppercase tracking-wider">Safe Max Allocation</span>
+                <span id="sizerPctBadge" class="text-xs font-extrabold font-mono text-emerald-400">7.5%</span>
+              </div>
+              <div>
+                <span id="sizerDollarVal" class="text-2xl sm:text-3xl font-black font-mono text-white">$750</span>
+                <span id="sizerSharesVal" class="text-xs text-emerald-300/90 font-mono block mt-0.5">Approx. 3.5 shares</span>
+              </div>
+              <div class="text-[10px] text-slate-400 pt-1 border-t border-emerald-500/20 font-mono">
+                <span id="sizerRiskNote">Sized for volatility & downside protection</span>
+              </div>
+            </div>
+
+            <!-- Card 2: Red-Line Danger Threshold -->
+            <div class="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 flex flex-col justify-between space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-[11px] text-rose-300 font-bold uppercase tracking-wider">Danger Red-Line</span>
+                <span id="sizerDangerPctBadge" class="text-xs font-bold font-mono text-rose-400">12.0%</span>
+              </div>
+              <div>
+                <span id="sizerDangerDollarVal" class="text-2xl sm:text-3xl font-black font-mono text-slate-200">$1,200</span>
+                <span class="text-xs text-rose-400/90 font-mono block mt-0.5">Never exceed this limit</span>
+              </div>
+              <div class="text-[10px] text-slate-400 pt-1 border-t border-slate-800/60 font-mono">
+                Prevents fatal portfolio blowups
+              </div>
+            </div>
+
+            <!-- Card 3: Portfolio Shock Resilience -->
+            <div class="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 flex flex-col justify-between space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-[11px] text-indigo-300 font-bold uppercase tracking-wider">Crash Stress Impact</span>
+                <span id="sizerDrawdownBadge" class="text-[10px] font-bold font-mono px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/40">-2.6% Max Drop</span>
+              </div>
+              <div>
+                <span id="sizerShockDollarVal" class="text-2xl sm:text-3xl font-black font-mono text-indigo-200">-$262</span>
+                <span class="text-xs text-slate-400 font-mono block mt-0.5">Total portfolio loss in 35% stock crash</span>
+              </div>
+              <div class="text-[10px] text-slate-400 pt-1 border-t border-slate-800/60 font-mono">
+                Small enough to sleep peacefully
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Action to Bridge to 3-Tranche Planner -->
+          <div class="flex justify-end">
+            <button type="button" onclick="applySizerBudgetToTranches()" class="text-xs font-bold font-mono text-indigo-400 hover:text-indigo-300 flex items-center gap-1.5 transition cursor-pointer">
+              <span>Apply this safe budget (<span id="sizerApplyBtnText">$750</span>) to 3-Tranche Buy Entry Roadmap</span>
+              <i data-lucide="arrow-down" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+        </div>
+
+        <hr class="border-slate-800/80">
+
+        <!-- SUB-SECTION 2: 3-Tranche Buy Entry Roadmap -->
+        <div id="trancheRoadmapSection" class="space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <h4 class="text-base font-bold text-white flex items-center gap-2">
+                <span class="w-6 h-6 rounded-md bg-indigo-500/20 border border-indigo-500/40 flex items-center justify-center text-xs font-mono text-indigo-300 font-bold">2</span>
+                <span>3-Tranche Buy Entry Roadmap</span>
+              </h4>
+              <p class="text-xs text-slate-400 mt-0.5">Never buy 100% at once. Scale in across 3 institutional limit orders to lower your average cost.</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-mono text-slate-400">Current Market Price:</span>
+              <b id="trancheCurrentPriceRef" class="text-sm font-black font-mono text-emerald-400">$--</b>
+            </div>
+          </div>
+
+          <!-- Budget Controls for Tranches -->
+          <div class="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div class="space-y-1">
+              <label class="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                <i data-lucide="wallet" class="w-3.5 h-3.5 text-cyan-400"></i> Total Target Allocation Budget
+              </label>
+              <span class="text-xs text-slate-500">Will be split evenly across all 3 execution tranches</span>
+            </div>
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <button type="button" onclick="setTrancheBudget(500)" class="tranche-budget-btn px-2.5 py-1 rounded-lg text-xs font-bold font-mono border border-slate-700 bg-slate-800 text-slate-300 hover:border-cyan-500 transition" data-budget="500">$500</button>
+              <button type="button" onclick="setTrancheBudget(750)" class="tranche-budget-btn px-2.5 py-1 rounded-lg text-xs font-bold font-mono border border-cyan-500/50 bg-cyan-500/20 text-cyan-300 transition" data-budget="750">$750</button>
+              <button type="button" onclick="setTrancheBudget(1000)" class="tranche-budget-btn px-2.5 py-1 rounded-lg text-xs font-bold font-mono border border-slate-700 bg-slate-800 text-slate-300 hover:border-cyan-500 transition" data-budget="1000">$1,000</button>
+              <button type="button" onclick="setTrancheBudget(2500)" class="tranche-budget-btn px-2.5 py-1 rounded-lg text-xs font-bold font-mono border border-slate-700 bg-slate-800 text-slate-300 hover:border-cyan-500 transition" data-budget="2500">$2,500</button>
+              <div class="relative flex items-center">
+                <span class="absolute left-2.5 text-xs font-mono text-slate-400">$</span>
+                <input type="number" id="trancheCustomBudgetInput" value="750" min="50" max="500000" step="50"
+                  oninput="onTrancheCustomBudgetChange(this.value)"
+                  class="w-24 pl-6 pr-2 py-1 text-xs font-bold font-mono rounded-lg bg-slate-950 border border-slate-700 text-white focus:outline-none focus:border-cyan-500">
+              </div>
+            </div>
+          </div>
+
+          <!-- 3 Tranche Cards Grid -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            
+            <!-- Tranche 1: Starter Position -->
+            <div class="p-4 sm:p-5 rounded-2xl bg-slate-900/90 border border-emerald-500/30 flex flex-col justify-between space-y-3 relative overflow-hidden">
+              <div class="space-y-2">
+                <div class="flex items-center justify-between">
+                  <span class="px-2.5 py-1 rounded-lg text-[10px] font-black font-mono uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                    1️⃣ TRANCHE 1: STARTER
+                  </span>
+                  <span class="text-[11px] font-bold font-mono text-emerald-400">BUY MARKET TODAY</span>
+                </div>
+                <div>
+                  <span class="text-[11px] text-slate-400 uppercase tracking-wider block font-bold">Execution Price</span>
+                  <div class="flex items-baseline gap-2 mt-0.5">
+                    <span id="tranche1Price" class="text-2xl font-black font-mono text-white">$--</span>
+                    <span class="text-xs font-bold font-mono text-emerald-400">(Current Market)</span>
+                  </div>
+                </div>
+                <div class="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800/80 font-mono text-xs flex justify-between">
+                  <span class="text-slate-400">Allocation:</span>
+                  <b id="tranche1Amount" class="text-slate-200">33% ($250 / 0.0 sh)</b>
+                </div>
+              </div>
+              <p class="text-xs text-slate-300 leading-relaxed pt-2 border-t border-slate-800/60">
+                <b class="text-white">Why Buy Now:</b> Gets skin in the game immediately. If the stock rallies to new highs tomorrow, you eliminate FOMO because you already own shares.
+              </p>
+            </div>
+
+            <!-- Tranche 2: Technical Pullback -->
+            <div class="p-4 sm:p-5 rounded-2xl bg-slate-900/90 border border-indigo-500/30 flex flex-col justify-between space-y-3 relative overflow-hidden">
+              <div class="space-y-2">
+                <div class="flex items-center justify-between">
+                  <span class="px-2.5 py-1 rounded-lg text-[10px] font-black font-mono uppercase tracking-wider bg-indigo-500/20 text-indigo-300 border border-indigo-500/40">
+                    2️⃣ TRANCHE 2: PULLBACK
+                  </span>
+                  <span class="text-[11px] font-bold font-mono text-indigo-400">SET LIMIT ORDER #1</span>
+                </div>
+                <div>
+                  <span class="text-[11px] text-slate-400 uppercase tracking-wider block font-bold">Limit Target Price</span>
+                  <div class="flex items-baseline gap-2 mt-0.5">
+                    <span id="tranche2Price" class="text-2xl font-black font-mono text-indigo-300">$--</span>
+                    <span id="tranche2Discount" class="text-xs font-bold font-mono text-indigo-400">(-8.2% Dip)</span>
+                  </div>
+                </div>
+                <div class="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800/80 font-mono text-xs flex justify-between">
+                  <span class="text-slate-400">Allocation:</span>
+                  <b id="tranche2Amount" class="text-slate-200">33% ($250 / 0.0 sh)</b>
+                </div>
+              </div>
+              <p class="text-xs text-slate-300 leading-relaxed pt-2 border-t border-slate-800/60">
+                <b class="text-white">Why Set Limit:</b> Key technical support / 50-day moving average. When normal market pullbacks occur, your order automatically buys the dip without watching charts.
+              </p>
+            </div>
+
+            <!-- Tranche 3: Margin of Safety Floor -->
+            <div class="p-4 sm:p-5 rounded-2xl bg-slate-900/90 border border-cyan-500/30 flex flex-col justify-between space-y-3 relative overflow-hidden">
+              <div class="space-y-2">
+                <div class="flex items-center justify-between">
+                  <span class="px-2.5 py-1 rounded-lg text-[10px] font-black font-mono uppercase tracking-wider bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
+                    3️⃣ TRANCHE 3: VALUE FLOOR
+                  </span>
+                  <span class="text-[11px] font-bold font-mono text-cyan-400">SET LIMIT ORDER #2</span>
+                </div>
+                <div>
+                  <span class="text-[11px] text-slate-400 uppercase tracking-wider block font-bold">Deep Discount Floor</span>
+                  <div class="flex items-baseline gap-2 mt-0.5">
+                    <span id="tranche3Price" class="text-2xl font-black font-mono text-cyan-300">$--</span>
+                    <span id="tranche3Discount" class="text-xs font-bold font-mono text-cyan-400">(-15.0% Floor)</span>
+                  </div>
+                </div>
+                <div class="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800/80 font-mono text-xs flex justify-between">
+                  <span class="text-slate-400">Allocation:</span>
+                  <b id="tranche3Amount" class="text-slate-200">34% ($250 / 0.0 sh)</b>
+                </div>
+              </div>
+              <p class="text-xs text-slate-300 leading-relaxed pt-2 border-t border-slate-800/60">
+                <b class="text-white">Why Set Floor:</b> 200-day institutional valuation support. In a macro market sell-off, you greedily accumulate shares at a bargain while others are panicking.
+              </p>
+            </div>
+
+          </div>
+
+          <!-- Blended Outcome & Order Summary Box -->
+          <div class="p-5 rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950/30 to-slate-900 border border-indigo-500/30 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div class="space-y-1">
+              <div class="flex items-center gap-2">
+                <i data-lucide="award" class="w-4 h-4 text-amber-400"></i>
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-300">Blended Result If All 3 Tranches Fill</span>
+              </div>
+              <div class="flex items-baseline gap-3 flex-wrap">
+                <span class="text-sm text-slate-400">Your Average Cost Basis:</span>
+                <span id="trancheBlendedBasis" class="text-xl sm:text-2xl font-black font-mono text-emerald-400">$0.00 / share</span>
+                <span id="trancheBlendedDiscountBadge" class="px-2.5 py-0.5 rounded-full text-xs font-bold font-mono bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                  7.7% Cheaper Than Today's Peak
+                </span>
+              </div>
+            </div>
+            <div>
+              <button type="button" id="copyOrdersBtn" onclick="copyTrancheOrderSummary()" class="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center justify-center gap-2 transition shadow-lg shadow-indigo-600/30 cursor-pointer">
+                <i data-lucide="copy" class="w-4 h-4"></i>
+                <span id="copyOrdersBtnText">Copy Limit Orders to Clipboard</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Institutional Wisdom Principle -->
+        <div class="p-4 rounded-2xl bg-slate-900/60 border border-slate-800/80 flex items-start gap-3">
+          <i data-lucide="sparkles" class="w-5 h-5 text-amber-400 shrink-0 mt-0.5"></i>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            <b class="text-white">Institutional Tranche Principle:</b> Professional hedge funds and asset managers never buy 100% of a target position in a single order. Scaling in across 3 tranches eliminates the psychological pain of buying at the top and mechanically turns future pullbacks into profit-boosting opportunities.
+          </p>
+        </div>
+
+      </div>
+
       <!-- Dividend Safety & Health Scorecard -->
       <div class="glass-card rounded-3xl p-6 sm:p-8 space-y-6">
         <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-800 pb-5">
@@ -1121,6 +1411,7 @@
       renderChart(data.history, evalData.ticker);
       renderAnnualPerformance(data.annual_returns, evalData.ticker);
       renderAnalystTargets(data.analyst_targets, evalData.ticker);
+      initExecutionCenter(m, evalData);
       renderDividendScorecard(data.dividend_data, evalData.ticker);
       renderInsiderTrading(data.insider_activity, evalData.ticker);
       renderMarketSentiment(data.market_sentiment);
@@ -1405,6 +1696,274 @@
       } else {
         targetBullishPct.className = "text-xs font-bold font-mono text-rose-400";
       }
+    }
+
+    // ==========================================
+    // EXECUTION & RISK MANAGEMENT CENTER
+    // ==========================================
+    let executionState = {
+      ticker: "NVDA",
+      name: "NVIDIA Corp.",
+      price: 214.13,
+      beta: 1.68,
+      forwardPe: 17.70,
+      isEtf: false,
+      fiftyDayAvg: null,
+      twoHundredDayAvg: null,
+      portfolioSize: 10000,
+      riskProfile: "balanced",
+      trancheBudget: 750
+    };
+
+    function initExecutionCenter(metrics, evalData) {
+      if (!metrics) return;
+      executionState.ticker = evalData.ticker || metrics.ticker || "Stock";
+      executionState.name = evalData.name || metrics.name || executionState.ticker;
+      executionState.price = metrics.price || 100.0;
+      executionState.beta = metrics.beta !== undefined && metrics.beta !== null ? metrics.beta : (metrics.is_etf ? 1.0 : 1.15);
+      executionState.forwardPe = metrics.forward_pe || metrics.trailing_pe || 20.0;
+      executionState.isEtf = !!metrics.is_etf;
+      executionState.fiftyDayAvg = metrics.fifty_day_average || null;
+      executionState.twoHundredDayAvg = metrics.two_hundred_day_average || null;
+
+      const betaBadge = document.getElementById('sizerBetaBadge');
+      if (betaBadge) {
+        if (executionState.isEtf) {
+          betaBadge.innerHTML = `<span class="px-2.5 py-1 rounded-lg text-xs font-bold font-mono bg-indigo-500/15 text-indigo-300 border border-indigo-500/30">Beta 1.00 (Broad Index ETF)</span>`;
+        } else if (executionState.beta > 1.35) {
+          betaBadge.innerHTML = `<span class="px-2.5 py-1 rounded-lg text-xs font-bold font-mono bg-rose-500/15 text-rose-400 border border-rose-500/30">Beta ${executionState.beta.toFixed(2)}x (High Volatility)</span>`;
+        } else if (executionState.beta < 0.85) {
+          betaBadge.innerHTML = `<span class="px-2.5 py-1 rounded-lg text-xs font-bold font-mono bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">Beta ${executionState.beta.toFixed(2)}x (Defensive Moat)</span>`;
+        } else {
+          betaBadge.innerHTML = `<span class="px-2.5 py-1 rounded-lg text-xs font-bold font-mono bg-slate-800 text-slate-300 border border-slate-700">Beta ${executionState.beta.toFixed(2)}x (Market Average)</span>`;
+        }
+      }
+
+      const currRef = document.getElementById('trancheCurrentPriceRef');
+      if (currRef) currRef.innerText = `$${executionState.price.toFixed(2)}`;
+
+      updatePositionSizer();
+      updateTrancheRoadmap();
+    }
+
+    function setPortfolioSize(size) {
+      executionState.portfolioSize = size;
+      const customInput = document.getElementById('portfolioCustomInput');
+      if (customInput) customInput.value = size;
+
+      document.querySelectorAll('.port-size-btn').forEach(btn => {
+        const val = parseInt(btn.getAttribute('data-size'), 10);
+        if (val === size) {
+          btn.className = "port-size-btn px-2.5 py-1 rounded-lg text-xs font-bold font-mono border border-indigo-500/50 bg-indigo-500/20 text-indigo-300 transition";
+        } else {
+          btn.className = "port-size-btn px-2.5 py-1 rounded-lg text-xs font-bold font-mono border border-slate-700 bg-slate-800 text-slate-300 hover:border-indigo-500 transition";
+        }
+      });
+
+      updatePositionSizer();
+    }
+
+    function onPortfolioCustomInputChange(val) {
+      const parsed = parseFloat(val);
+      if (!isNaN(parsed) && parsed > 0) {
+        executionState.portfolioSize = parsed;
+        document.querySelectorAll('.port-size-btn').forEach(btn => {
+          const val = parseInt(btn.getAttribute('data-size'), 10);
+          if (val === parsed) {
+            btn.className = "port-size-btn px-2.5 py-1 rounded-lg text-xs font-bold font-mono border border-indigo-500/50 bg-indigo-500/20 text-indigo-300 transition";
+          } else {
+            btn.className = "port-size-btn px-2.5 py-1 rounded-lg text-xs font-bold font-mono border border-slate-700 bg-slate-800 text-slate-300 hover:border-indigo-500 transition";
+          }
+        });
+        updatePositionSizer();
+      }
+    }
+
+    function setRiskProfile(profile) {
+      executionState.riskProfile = profile;
+      document.querySelectorAll('.risk-prof-btn').forEach(btn => {
+        const p = btn.getAttribute('data-profile');
+        if (p === profile) {
+          btn.className = "risk-prof-btn px-2.5 py-1 rounded-lg text-xs font-bold font-mono border border-emerald-500/50 bg-emerald-500/20 text-emerald-300 transition";
+        } else {
+          btn.className = "risk-prof-btn px-2.5 py-1 rounded-lg text-xs font-bold font-mono border border-slate-700 bg-slate-800 text-slate-300 hover:border-emerald-500 transition";
+        }
+      });
+      updatePositionSizer();
+    }
+
+    function updatePositionSizer() {
+      const port = executionState.portfolioSize || 10000;
+      const beta = executionState.beta || 1.0;
+      const isEtf = executionState.isEtf;
+      const profile = executionState.riskProfile || "balanced";
+
+      let safePct = 7.5;
+      if (isEtf) {
+        safePct = profile === "conservative" ? 25.0 : (profile === "balanced" ? 35.0 : 45.0);
+      } else {
+        let base = 8.5 / Math.pow(Math.max(0.45, beta), 0.75);
+        if (profile === "conservative") base *= 0.65;
+        else if (profile === "aggressive") base *= 1.35;
+        
+        if (executionState.forwardPe > 45) base *= 0.85;
+        if (beta < 0.75 && executionState.forwardPe < 25) base *= 1.25;
+
+        safePct = Math.max(2.5, Math.min(22.0, base));
+      }
+
+      safePct = Math.round(safePct * 10) / 10;
+      const maxDollar = Math.round(port * (safePct / 100));
+      const shares = executionState.price > 0 ? (maxDollar / executionState.price).toFixed(1) : 0;
+
+      const dangerPct = Math.round(safePct * 1.6 * 10) / 10;
+      const dangerDollar = Math.round(port * (dangerPct / 100));
+
+      const shockLoss = Math.round(maxDollar * 0.35);
+      const shockPortfolioPct = (safePct * 0.35).toFixed(1);
+
+      document.getElementById('sizerPctBadge').innerText = `${safePct.toFixed(1)}%`;
+      document.getElementById('sizerDollarVal').innerText = `$${maxDollar.toLocaleString()}`;
+      document.getElementById('sizerSharesVal').innerText = `Approx. ${shares} shares @ $${executionState.price.toFixed(2)}`;
+      
+      let note = `Sized for ${executionState.beta.toFixed(2)}x Beta volatility`;
+      if (isEtf) note = "Broad index ETF - eligible for foundational core allocation";
+      else if (executionState.beta > 1.35) note = "High Beta growth stock - capped strictly to protect principal";
+      else if (executionState.beta < 0.85) note = "Low Beta defensive staple - safe for larger portfolio share";
+      document.getElementById('sizerRiskNote').innerText = note;
+
+      document.getElementById('sizerDangerPctBadge').innerText = `${dangerPct.toFixed(1)}%`;
+      document.getElementById('sizerDangerDollarVal').innerText = `$${dangerDollar.toLocaleString()}`;
+
+      document.getElementById('sizerDrawdownBadge').innerText = `-${shockPortfolioPct}% Max Impact`;
+      document.getElementById('sizerShockDollarVal').innerText = `-$${shockLoss.toLocaleString()}`;
+
+      document.getElementById('sizerApplyBtnText').innerText = `$${maxDollar.toLocaleString()}`;
+      executionState.safeMaxBudget = maxDollar;
+    }
+
+    function applySizerBudgetToTranches() {
+      const budget = executionState.safeMaxBudget || 750;
+      setTrancheBudget(budget);
+      const targetSec = document.getElementById('trancheRoadmapSection');
+      if (targetSec) {
+        targetSec.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+
+    function setTrancheBudget(budget) {
+      executionState.trancheBudget = budget;
+      const customInput = document.getElementById('trancheCustomBudgetInput');
+      if (customInput) customInput.value = budget;
+
+      document.querySelectorAll('.tranche-budget-btn').forEach(btn => {
+        const val = parseInt(btn.getAttribute('data-budget'), 10);
+        if (val === budget) {
+          btn.className = "tranche-budget-btn px-2.5 py-1 rounded-lg text-xs font-bold font-mono border border-cyan-500/50 bg-cyan-500/20 text-cyan-300 transition";
+        } else {
+          btn.className = "tranche-budget-btn px-2.5 py-1 rounded-lg text-xs font-bold font-mono border border-slate-700 bg-slate-800 text-slate-300 hover:border-cyan-500 transition";
+        }
+      });
+
+      updateTrancheRoadmap();
+    }
+
+    function onTrancheCustomBudgetChange(val) {
+      const parsed = parseFloat(val);
+      if (!isNaN(parsed) && parsed > 0) {
+        executionState.trancheBudget = parsed;
+        document.querySelectorAll('.tranche-budget-btn').forEach(btn => {
+          const bVal = parseInt(btn.getAttribute('data-budget'), 10);
+          if (bVal === parsed) {
+            btn.className = "tranche-budget-btn px-2.5 py-1 rounded-lg text-xs font-bold font-mono border border-cyan-500/50 bg-cyan-500/20 text-cyan-300 transition";
+          } else {
+            btn.className = "tranche-budget-btn px-2.5 py-1 rounded-lg text-xs font-bold font-mono border border-slate-700 bg-slate-800 text-slate-300 hover:border-cyan-500 transition";
+          }
+        });
+        updateTrancheRoadmap();
+      }
+    }
+
+    function updateTrancheRoadmap() {
+      const p = executionState.price || 100.0;
+      const b = executionState.trancheBudget || 750;
+      const beta = executionState.beta || 1.0;
+      const isEtf = executionState.isEtf;
+
+      const t1Price = p;
+      const t1Budget = Math.round(b * 0.33);
+      const t1Shares = t1Price > 0 ? (t1Budget / t1Price) : 0;
+
+      let t2DiscountPct = 8.2;
+      if (isEtf) t2DiscountPct = 4.0;
+      else if (beta < 0.85) t2DiscountPct = 5.0;
+      else if (beta > 1.35) t2DiscountPct = 9.5;
+
+      let t2Price = p * (1 - (t2DiscountPct / 100));
+      if (executionState.fiftyDayAvg && executionState.fiftyDayAvg < p && executionState.fiftyDayAvg > p * 0.85) {
+        t2Price = executionState.fiftyDayAvg;
+        t2DiscountPct = ((p - t2Price) / p) * 100;
+      }
+      const t2Budget = Math.round(b * 0.33);
+      const t2Shares = t2Price > 0 ? (t2Budget / t2Price) : 0;
+
+      let t3DiscountPct = 15.0;
+      if (isEtf) t3DiscountPct = 7.5;
+      else if (beta < 0.85) t3DiscountPct = 9.0;
+      else if (beta > 1.35) t3DiscountPct = 17.0;
+
+      let t3Price = p * (1 - (t3DiscountPct / 100));
+      if (executionState.twoHundredDayAvg && executionState.twoHundredDayAvg < p && executionState.twoHundredDayAvg > p * 0.70) {
+        t3Price = executionState.twoHundredDayAvg;
+        t3DiscountPct = ((p - t3Price) / p) * 100;
+      }
+      const t3Budget = b - t1Budget - t2Budget;
+      const t3Shares = t3Price > 0 ? (t3Budget / t3Price) : 0;
+
+      const totalShares = t1Shares + t2Shares + t3Shares;
+      const blendedPrice = totalShares > 0 ? (b / totalShares) : p;
+      const blendedDiscount = p > 0 ? (((p - blendedPrice) / p) * 100) : 0;
+
+      document.getElementById('tranche1Price').innerText = `$${t1Price.toFixed(2)}`;
+      document.getElementById('tranche1Amount').innerText = `33% ($${t1Budget.toLocaleString()} / ${t1Shares.toFixed(2)} sh)`;
+
+      document.getElementById('tranche2Price').innerText = `$${t2Price.toFixed(2)}`;
+      document.getElementById('tranche2Discount').innerText = `(-${t2DiscountPct.toFixed(1)}% Dip)`;
+      document.getElementById('tranche2Amount').innerText = `33% ($${t2Budget.toLocaleString()} / ${t2Shares.toFixed(2)} sh)`;
+
+      document.getElementById('tranche3Price').innerText = `$${t3Price.toFixed(2)}`;
+      document.getElementById('tranche3Discount').innerText = `(-${t3DiscountPct.toFixed(1)}% Floor)`;
+      document.getElementById('tranche3Amount').innerText = `34% ($${t3Budget.toLocaleString()} / ${t3Shares.toFixed(2)} sh)`;
+
+      document.getElementById('trancheBlendedBasis').innerText = `$${blendedPrice.toFixed(2)} / share`;
+      document.getElementById('trancheBlendedDiscountBadge').innerText = `${blendedDiscount.toFixed(1)}% Cheaper Than Today's Peak`;
+
+      executionState.orderSummaryText = 
+`🎯 StockPulse 3-Tranche Limit Order Execution Plan:
+Ticker: ${executionState.ticker} (${executionState.name})
+Current Market Price: $${p.toFixed(2)}
+Total Target Budget: $${b.toLocaleString()}
+
+1️⃣ Tranche 1 (Starter - 33%): BUY MARKET @ $${t1Price.toFixed(2)} ($${t1Budget.toLocaleString()} / ${t1Shares.toFixed(2)} sh)
+2️⃣ Tranche 2 (Pullback - 33%): LIMIT ORDER @ $${t2Price.toFixed(2)} (-${t2DiscountPct.toFixed(1)}% Dip) ($${t2Budget.toLocaleString()} / ${t2Shares.toFixed(2)} sh)
+3️⃣ Tranche 3 (Safety Floor - 34%): LIMIT ORDER @ $${t3Price.toFixed(2)} (-${t3DiscountPct.toFixed(1)}% Floor) ($${t3Budget.toLocaleString()} / ${t3Shares.toFixed(2)} sh)
+
+🏆 Blended Average Cost Basis: $${blendedPrice.toFixed(2)}/sh (${blendedDiscount.toFixed(1)}% Cheaper Than Peak)
+Generated via StockPulse: https://stockpulse-app-gamma.vercel.app`;
+    }
+
+    function copyTrancheOrderSummary() {
+      if (!executionState.orderSummaryText) return;
+      navigator.clipboard.writeText(executionState.orderSummaryText).then(() => {
+        const btn = document.getElementById('copyOrdersBtnText');
+        if (btn) {
+          const original = btn.innerText;
+          btn.innerText = "✓ Limit Orders Copied!";
+          setTimeout(() => { btn.innerText = original; }, 2500);
+        }
+      }).catch(err => {
+        console.error("Clipboard copy failed:", err);
+      });
     }
 
     function renderDividendScorecard(dividendData, ticker) {
