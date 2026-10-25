@@ -51,7 +51,8 @@ async def evaluate_ticker_endpoint(ticker: str):
         "market_sentiment": data.get("market_sentiment", {}),
         "analyst_targets": data.get("analyst_targets", {}),
         "bull_bear_cases": data.get("bull_bear_cases", {}),
-        "dividend_data": data.get("dividend_data", {})
+        "dividend_data": data.get("dividend_data", {}),
+        "news": data.get("news", [])
     }
 
 @app.get("/api/search")
