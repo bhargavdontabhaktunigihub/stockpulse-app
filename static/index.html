@@ -827,6 +827,161 @@
         </div>
       </div>
 
+      <!-- Dollar-Cost Averaging (DCA) Wealth Compounding Simulator -->
+      <div class="glass-card rounded-3xl p-6 sm:p-8 space-y-6">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-800 pb-5">
+          <div>
+            <div class="flex items-center gap-2">
+              <div class="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+                <i data-lucide="calculator" class="w-4 h-4 text-emerald-400"></i>
+              </div>
+              <h3 class="text-xl font-bold text-white tracking-tight">Interactive DCA Wealth Compounding Simulator</h3>
+            </div>
+            <p class="text-xs text-slate-400 mt-1">Simulate investing a recurring monthly amount over time vs. S&P 500 (VOO) and Cash Savings</p>
+          </div>
+          <div id="dcaMultiplierBadge" class="flex items-center gap-2">
+            <!-- Dynamic multiple badge e.g. 5.7x Wealth Multiple -->
+          </div>
+        </div>
+
+        <!-- Interactive Controls Bar -->
+        <div class="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+            
+            <!-- Control 1: Monthly Deposit -->
+            <div class="md:col-span-5 space-y-2">
+              <label class="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                <i data-lucide="circle-dollar-sign" class="w-3.5 h-3.5 text-emerald-400"></i> Monthly Contribution
+              </label>
+              <div class="flex items-center gap-2 flex-wrap">
+                <div class="flex items-center gap-1">
+                  <button type="button" onclick="setDCAMonthly(50)" class="dca-amount-btn px-2.5 py-1 rounded-lg text-xs font-bold font-mono border border-slate-700 bg-slate-800 text-slate-300 hover:border-emerald-500 transition" data-amount="50">$50</button>
+                  <button type="button" onclick="setDCAMonthly(100)" class="dca-amount-btn px-2.5 py-1 rounded-lg text-xs font-bold font-mono border border-emerald-500/50 bg-emerald-500/20 text-emerald-300 transition" data-amount="100">$100</button>
+                  <button type="button" onclick="setDCAMonthly(250)" class="dca-amount-btn px-2.5 py-1 rounded-lg text-xs font-bold font-mono border border-slate-700 bg-slate-800 text-slate-300 hover:border-emerald-500 transition" data-amount="250">$250</button>
+                  <button type="button" onclick="setDCAMonthly(500)" class="dca-amount-btn px-2.5 py-1 rounded-lg text-xs font-bold font-mono border border-slate-700 bg-slate-800 text-slate-300 hover:border-emerald-500 transition" data-amount="500">$500</button>
+                </div>
+                <div class="relative flex items-center">
+                  <span class="absolute left-2.5 text-xs font-mono text-slate-400">$</span>
+                  <input type="number" id="dcaCustomInput" value="100" min="10" max="50000" step="10" 
+                    oninput="onDCACustomInputChange(this.value)" 
+                    class="w-24 pl-6 pr-2 py-1 text-xs font-bold font-mono rounded-lg bg-slate-950 border border-slate-700 text-white focus:outline-none focus:border-emerald-500">
+                  <span class="text-[11px] text-slate-400 ml-1.5 font-mono">/mo</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Control 2: Timeframe Horizon -->
+            <div class="md:col-span-4 space-y-2">
+              <label class="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                <i data-lucide="clock" class="w-3.5 h-3.5 text-indigo-400"></i> Investment Horizon
+              </label>
+              <div class="flex items-center gap-1.5">
+                <button type="button" onclick="setDCATimeframe(1)" class="dca-horizon-btn px-3 py-1 rounded-lg text-xs font-bold font-mono border border-slate-700 bg-slate-800 text-slate-300 hover:border-indigo-500 transition" data-years="1">1 Year</button>
+                <button type="button" onclick="setDCATimeframe(3)" class="dca-horizon-btn px-3 py-1 rounded-lg text-xs font-bold font-mono border border-slate-700 bg-slate-800 text-slate-300 hover:border-indigo-500 transition" data-years="3">3 Years</button>
+                <button type="button" onclick="setDCATimeframe(5)" class="dca-horizon-btn px-3 py-1 rounded-lg text-xs font-bold font-mono border border-indigo-500/50 bg-indigo-500/20 text-indigo-300 transition" data-years="5">5 Years</button>
+                <button type="button" onclick="setDCATimeframe(10)" class="dca-horizon-btn px-3 py-1 rounded-lg text-xs font-bold font-mono border border-slate-700 bg-slate-800 text-slate-300 hover:border-indigo-500 transition" data-years="10">10 Years</button>
+              </div>
+            </div>
+
+            <!-- Control 3: DRIP Checkbox -->
+            <div class="md:col-span-3 flex md:justify-end items-center pt-2 md:pt-0">
+              <label class="flex items-center gap-2 cursor-pointer select-none text-xs text-slate-300 hover:text-white transition">
+                <input type="checkbox" id="dcaDripToggle" checked onchange="toggleDCADrip(this.checked)" class="w-4 h-4 rounded border-slate-700 bg-slate-900 text-emerald-500 focus:ring-emerald-500 accent-emerald-500">
+                <span class="font-semibold flex items-center gap-1">
+                  <i data-lucide="refresh-cw" class="w-3.5 h-3.5 text-emerald-400"></i> Reinvest Dividends
+                </span>
+              </label>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- 4 Outcome Comparison Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <!-- Card 1: Principal Invested -->
+          <div class="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 flex flex-col justify-between space-y-2">
+            <span class="text-[11px] text-slate-400 font-bold uppercase tracking-wider block">Total Out-of-Pocket Invested</span>
+            <div>
+              <span id="dcaPrincipalVal" class="text-2xl sm:text-3xl font-black font-mono text-white">$6,000</span>
+              <span id="dcaPaceText" class="text-xs text-slate-400 block mt-0.5">$100/mo across 60 deposits</span>
+            </div>
+            <div class="text-[10px] text-slate-500 pt-1 border-t border-slate-800/60 font-mono">
+              Zero lump-sum market timing required
+            </div>
+          </div>
+
+          <!-- Card 2: Stock Ending Value -->
+          <div class="p-4 rounded-2xl bg-emerald-950/20 border border-emerald-500/30 flex flex-col justify-between space-y-2">
+            <div class="flex items-center justify-between">
+              <span id="dcaStockNameLabel" class="text-[11px] text-emerald-300 font-bold uppercase tracking-wider block">Target Stock Value</span>
+              <span id="dcaStockGainBadge" class="text-[10px] font-bold font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">+474.0%</span>
+            </div>
+            <div>
+              <span id="dcaStockEndingVal" class="text-2xl sm:text-3xl font-black font-mono text-emerald-400">$34,438</span>
+              <span id="dcaStockProfitVal" class="text-xs font-bold font-mono text-emerald-300 block mt-0.5">+$28,438 Net Profit</span>
+            </div>
+            <div class="text-[10px] text-emerald-300/80 pt-1 border-t border-emerald-500/20 font-mono">
+              <span id="dcaStockCagrVal">Compounded growth + dividends</span>
+            </div>
+          </div>
+
+          <!-- Card 3: S&P 500 Benchmark -->
+          <div class="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 flex flex-col justify-between space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] text-indigo-300 font-bold uppercase tracking-wider block">S&P 500 Index (VOO)</span>
+              <span id="dcaSpGainBadge" class="text-[10px] font-bold font-mono px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/40">+44.8%</span>
+            </div>
+            <div>
+              <span id="dcaSpEndingVal" class="text-2xl sm:text-3xl font-black font-mono text-indigo-300">$8,689</span>
+              <span id="dcaSpProfitVal" class="text-xs font-bold font-mono text-slate-300 block mt-0.5">+$2,689 Net Profit</span>
+            </div>
+            <div class="text-[10px] text-slate-400 pt-1 border-t border-slate-800/60 font-mono">
+              <span id="dcaVsSpAlpha">Target stock beat S&P 500 by +$25,749</span>
+            </div>
+          </div>
+
+          <!-- Card 4: Cash Savings Benchmark -->
+          <div class="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 flex flex-col justify-between space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] text-slate-400 font-bold uppercase tracking-wider block">High-Yield Cash Savings (2.5%)</span>
+              <span id="dcaSavingsGainBadge" class="text-[10px] font-bold font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">+6.5%</span>
+            </div>
+            <div>
+              <span id="dcaSavingsEndingVal" class="text-2xl sm:text-3xl font-black font-mono text-slate-300">$6,393</span>
+              <span id="dcaSavingsProfitVal" class="text-xs font-bold font-mono text-slate-400 block mt-0.5">+$393 Net Interest</span>
+            </div>
+            <div class="text-[10px] text-slate-400 pt-1 border-t border-slate-800/60 font-mono">
+              Safe from dips, but lags inflation
+            </div>
+          </div>
+        </div>
+
+        <!-- Trajectory Chart -->
+        <div>
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+              <i data-lucide="trending-up" class="w-3.5 h-3.5 text-emerald-400"></i> Monthly Wealth Trajectory Simulation
+            </h4>
+            <div class="flex items-center gap-3 text-[11px] font-mono">
+              <span class="flex items-center gap-1 text-emerald-400"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> <span id="dcaChartLegendStock">Target Stock</span></span>
+              <span class="flex items-center gap-1 text-indigo-400"><span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span> S&P 500 (VOO)</span>
+              <span class="flex items-center gap-1 text-slate-400"><span class="w-2.5 h-0.5 bg-slate-500"></span> Total Contributed</span>
+            </div>
+          </div>
+          <div class="h-64 sm:h-80 w-full">
+            <canvas id="dcaChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Peter Lynch DCA Wisdom Box -->
+        <div class="p-4 rounded-2xl bg-slate-900/60 border border-slate-800/80 flex items-start gap-3">
+          <i data-lucide="sparkles" class="w-5 h-5 text-amber-400 shrink-0 mt-0.5"></i>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            <b class="text-white">The Dollar-Cost Averaging (DCA) Advantage:</b> Trying to "time the market" is where most retail investors lose money. By automating a fixed monthly deposit, you automatically buy <b class="text-emerald-400">more shares when the price drops</b> during pullbacks, and fewer shares when prices peak. Over 3–10 years, disciplined monthly compounding has consistently outperformed emotional market timing.
+          </p>
+        </div>
+      </div>
+
     </div>
 
   </main>
@@ -971,6 +1126,7 @@
       renderMarketSentiment(data.market_sentiment);
       renderEarningsTrackRecord(data.earnings_data, evalData.ticker);
       renderNewsFeed(data.news, evalData.ticker);
+      initDCASimulator(data.annual_returns, m.dividend_yield, evalData.ticker, evalData.name);
       lucide.createIcons();
     }
 
@@ -1709,6 +1865,296 @@
               ticks: {
                 color: '#64748b',
                 callback: (val) => val + '%'
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // ==========================================
+    // DCA WEALTH SIMULATOR STATE & LOGIC
+    // ==========================================
+    let dcaState = {
+      monthlyAmount: 100,
+      years: 5,
+      dripEnabled: true,
+      annualReturns: [],
+      dividendYield: 0.0,
+      ticker: "NVDA",
+      name: "NVIDIA Corp."
+    };
+
+    let dcaChartInstance = null;
+
+    const S_AND_P_500_BENCHMARK = {
+      2014: 13.7, 2015: 1.4, 2016: 12.0, 2017: 21.8, 2018: -4.4,
+      2019: 31.5, 2020: 18.4, 2021: 28.7, 2022: -18.1, 2023: 26.3,
+      2024: 25.0, 2025: 14.5, 2026: 10.0
+    };
+
+    function initDCASimulator(annualReturns, dividendYield, ticker, name) {
+      dcaState.annualReturns = annualReturns || [];
+      dcaState.dividendYield = dividendYield || 0.0;
+      dcaState.ticker = ticker || "Stock";
+      dcaState.name = name || ticker;
+
+      // Update static legend / label references
+      const nameLabel = document.getElementById('dcaStockNameLabel');
+      const legendLabel = document.getElementById('dcaChartLegendStock');
+      if (nameLabel) nameLabel.innerText = `${dcaState.ticker} Portfolio Value`;
+      if (legendLabel) legendLabel.innerText = `${dcaState.ticker}`;
+
+      updateDCACalculation();
+    }
+
+    function setDCAMonthly(amount) {
+      dcaState.monthlyAmount = amount;
+      const customInput = document.getElementById('dcaCustomInput');
+      if (customInput) customInput.value = amount;
+
+      // Update buttons style
+      document.querySelectorAll('.dca-amount-btn').forEach(btn => {
+        const val = parseInt(btn.getAttribute('data-amount'), 10);
+        if (val === amount) {
+          btn.className = "dca-amount-btn px-2.5 py-1 rounded-lg text-xs font-bold font-mono border border-emerald-500/50 bg-emerald-500/20 text-emerald-300 transition";
+        } else {
+          btn.className = "dca-amount-btn px-2.5 py-1 rounded-lg text-xs font-bold font-mono border border-slate-700 bg-slate-800 text-slate-300 hover:border-emerald-500 transition";
+        }
+      });
+
+      updateDCACalculation();
+    }
+
+    function onDCACustomInputChange(val) {
+      const parsed = parseFloat(val);
+      if (!isNaN(parsed) && parsed > 0) {
+        dcaState.monthlyAmount = parsed;
+        // Un-highlight preset buttons if custom
+        document.querySelectorAll('.dca-amount-btn').forEach(btn => {
+          const btnVal = parseInt(btn.getAttribute('data-amount'), 10);
+          if (btnVal === parsed) {
+            btn.className = "dca-amount-btn px-2.5 py-1 rounded-lg text-xs font-bold font-mono border border-emerald-500/50 bg-emerald-500/20 text-emerald-300 transition";
+          } else {
+            btn.className = "dca-amount-btn px-2.5 py-1 rounded-lg text-xs font-bold font-mono border border-slate-700 bg-slate-800 text-slate-300 hover:border-emerald-500 transition";
+          }
+        });
+        updateDCACalculation();
+      }
+    }
+
+    function setDCATimeframe(years) {
+      dcaState.years = years;
+
+      document.querySelectorAll('.dca-horizon-btn').forEach(btn => {
+        const val = parseInt(btn.getAttribute('data-years'), 10);
+        if (val === years) {
+          btn.className = "dca-horizon-btn px-3 py-1 rounded-lg text-xs font-bold font-mono border border-indigo-500/50 bg-indigo-500/20 text-indigo-300 transition";
+        } else {
+          btn.className = "dca-horizon-btn px-3 py-1 rounded-lg text-xs font-bold font-mono border border-slate-700 bg-slate-800 text-slate-300 hover:border-indigo-500 transition";
+        }
+      });
+
+      updateDCACalculation();
+    }
+
+    function toggleDCADrip(checked) {
+      dcaState.dripEnabled = checked;
+      updateDCACalculation();
+    }
+
+    function updateDCACalculation() {
+      if (!dcaState.annualReturns || dcaState.annualReturns.length === 0) return;
+
+      const monthly = dcaState.monthlyAmount || 100;
+      const numYears = dcaState.years || 5;
+      const sorted = [...dcaState.annualReturns].sort((a, b) => a.year - b.year);
+      const yearsSlice = sorted.slice(-numYears);
+
+      const divYield = (dcaState.dripEnabled && dcaState.dividendYield) ? Math.min(dcaState.dividendYield, 0.15) : 0;
+      const savingsMonthlyRate = Math.pow(1 + 0.025, 1/12) - 1; // 2.5% APY
+
+      let stockVal = 0;
+      let spVal = 0;
+      let savingsVal = 0;
+      let cashInvested = 0;
+
+      const labels = [];
+      const stockTrajectory = [];
+      const spTrajectory = [];
+      const cashTrajectory = [];
+
+      let totalMonths = 0;
+
+      yearsSlice.forEach((yrObj, yIdx) => {
+        const yr = yrObj.year;
+        const rStock = (yrObj.return_pct / 100) + divYield;
+        const rSP = ((S_AND_P_500_BENCHMARK[yr] || 12.0) / 100) + 0.015; // S&P 500 + 1.5% dividend
+
+        const mStockRate = Math.pow(Math.max(0.001, 1 + rStock), 1/12) - 1;
+        const mSPRate = Math.pow(Math.max(0.001, 1 + rSP), 1/12) - 1;
+
+        for (let m = 1; m <= 12; m++) {
+          totalMonths++;
+          stockVal = (stockVal + monthly) * (1 + mStockRate);
+          spVal = (spVal + monthly) * (1 + mSPRate);
+          savingsVal = (savingsVal + monthly) * (1 + savingsMonthlyRate);
+          cashInvested += monthly;
+
+          const sampleInterval = numYears <= 1 ? 1 : (numYears <= 3 ? 2 : 3);
+          if (m % sampleInterval === 0 || (yIdx === yearsSlice.length - 1 && m === 12)) {
+            labels.push(`'${String(yr).slice(2)} M${m}`);
+            stockTrajectory.push(Math.round(stockVal));
+            spTrajectory.push(Math.round(spVal));
+            cashTrajectory.push(Math.round(cashInvested));
+          }
+        }
+      });
+
+      const netStockProfit = stockVal - cashInvested;
+      const pctStockGain = cashInvested > 0 ? ((netStockProfit / cashInvested) * 100) : 0;
+      const multiple = cashInvested > 0 ? (stockVal / cashInvested).toFixed(1) : "1.0";
+
+      const netSpProfit = spVal - cashInvested;
+      const pctSpGain = cashInvested > 0 ? ((netSpProfit / cashInvested) * 100) : 0;
+
+      const netSavingsProfit = savingsVal - cashInvested;
+      const pctSavingsGain = cashInvested > 0 ? ((netSavingsProfit / cashInvested) * 100) : 0;
+
+      // 1. Update Multiplier Badge
+      const badge = document.getElementById('dcaMultiplierBadge');
+      if (badge) {
+        if (stockVal >= cashInvested) {
+          badge.innerHTML = `<span class="px-3.5 py-1.5 rounded-full text-xs font-black font-mono bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">🟢 ${multiple}x WEALTH MULTIPLIER</span>`;
+        } else {
+          badge.innerHTML = `<span class="px-3.5 py-1.5 rounded-full text-xs font-black font-mono bg-rose-500/20 text-rose-400 border border-rose-500/40">🔴 ${multiple}x PRINCIPAL</span>`;
+        }
+      }
+
+      // 2. Card 1: Principal
+      document.getElementById('dcaPrincipalVal').innerText = `$${Math.round(cashInvested).toLocaleString()}`;
+      document.getElementById('dcaPaceText').innerText = `$${Math.round(monthly).toLocaleString()}/mo across ${totalMonths} deposits`;
+
+      // 3. Card 2: Stock Value
+      document.getElementById('dcaStockEndingVal').innerText = `$${Math.round(stockVal).toLocaleString()}`;
+      const stockProfitEl = document.getElementById('dcaStockProfitVal');
+      const stockGainBadge = document.getElementById('dcaStockGainBadge');
+      
+      const isStockPos = netStockProfit >= 0;
+      stockProfitEl.innerText = `${isStockPos ? '+' : ''}$${Math.round(netStockProfit).toLocaleString()} Net Profit`;
+      stockProfitEl.className = isStockPos ? "text-xs font-bold font-mono text-emerald-300 block mt-0.5" : "text-xs font-bold font-mono text-rose-400 block mt-0.5";
+      
+      stockGainBadge.innerText = `${isStockPos ? '+' : ''}${pctStockGain.toFixed(1)}%`;
+      stockGainBadge.className = isStockPos ? "text-[10px] font-bold font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40" : "text-[10px] font-bold font-mono px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/40";
+
+      // 4. Card 3: S&P 500 Benchmark
+      document.getElementById('dcaSpEndingVal').innerText = `$${Math.round(spVal).toLocaleString()}`;
+      document.getElementById('dcaSpProfitVal').innerText = `+$${Math.round(netSpProfit).toLocaleString()} Net Profit`;
+      document.getElementById('dcaSpGainBadge').innerText = `+${pctSpGain.toFixed(1)}%`;
+
+      const diffVsSp = stockVal - spVal;
+      const alphaEl = document.getElementById('dcaVsSpAlpha');
+      if (diffVsSp >= 0) {
+        alphaEl.innerText = `${dcaState.ticker} beat S&P 500 by +$${Math.round(diffVsSp).toLocaleString()}`;
+        alphaEl.className = "text-emerald-400 font-bold";
+      } else {
+        alphaEl.innerText = `${dcaState.ticker} trailed S&P 500 by -$${Math.round(Math.abs(diffVsSp)).toLocaleString()}`;
+        alphaEl.className = "text-slate-400";
+      }
+
+      // 5. Card 4: Savings Benchmark
+      document.getElementById('dcaSavingsEndingVal').innerText = `$${Math.round(savingsVal).toLocaleString()}`;
+      document.getElementById('dcaSavingsProfitVal').innerText = `+$${Math.round(netSavingsProfit).toLocaleString()} Net Interest`;
+      document.getElementById('dcaSavingsGainBadge').innerText = `+${pctSavingsGain.toFixed(1)}%`;
+
+      // 6. Render Chart.js Trajectory
+      renderDCAChart(labels, stockTrajectory, spTrajectory, cashTrajectory);
+    }
+
+    function renderDCAChart(labels, stockData, spData, cashData) {
+      const canvas = document.getElementById('dcaChart');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+
+      if (dcaChartInstance) {
+        dcaChartInstance.destroy();
+      }
+
+      dcaChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: `${dcaState.ticker} Portfolio`,
+              data: stockData,
+              borderColor: '#10b981',
+              backgroundColor: 'rgba(16, 185, 129, 0.12)',
+              borderWidth: 2.5,
+              fill: true,
+              tension: 0.35,
+              pointRadius: labels.length > 25 ? 0 : 3,
+              pointHoverRadius: 5,
+              pointBackgroundColor: '#10b981'
+            },
+            {
+              label: 'S&P 500 (VOO)',
+              data: spData,
+              borderColor: '#6366f1',
+              backgroundColor: 'transparent',
+              borderWidth: 2,
+              borderDash: [4, 4],
+              fill: false,
+              tension: 0.35,
+              pointRadius: 0,
+              pointHoverRadius: 4,
+              pointBackgroundColor: '#6366f1'
+            },
+            {
+              label: 'Total Cash Contributed',
+              data: cashData,
+              borderColor: '#64748b',
+              backgroundColor: 'transparent',
+              borderWidth: 1.5,
+              borderDash: [2, 2],
+              fill: false,
+              tension: 0,
+              pointRadius: 0,
+              pointHoverRadius: 4,
+              pointBackgroundColor: '#64748b'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: {
+            mode: 'index',
+            intersect: false
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#0f172a',
+              borderColor: '#334155',
+              borderWidth: 1,
+              titleColor: '#94a3b8',
+              bodyColor: '#ffffff',
+              callbacks: {
+                label: (ctx) => `${ctx.dataset.label}: $${ctx.parsed.y.toLocaleString()}`
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: { display: false },
+              ticks: { color: '#64748b', maxRotation: 0, autoSkip: true, maxTicksLimit: 12 }
+            },
+            y: {
+              grid: { color: 'rgba(255, 255, 255, 0.05)' },
+              ticks: {
+                color: '#64748b',
+                callback: (val) => '$' + Number(val).toLocaleString()
               }
             }
           }
