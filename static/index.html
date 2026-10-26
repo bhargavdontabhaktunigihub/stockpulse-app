@@ -548,6 +548,18 @@
 
         <hr class="border-slate-800/80">
 
+        <!-- Segmented Tab Switcher for Execution Roadmaps -->
+        <div class="flex items-center gap-2 border-b border-slate-800 pb-3 flex-wrap">
+          <button type="button" id="tabBtnBuyRoadmap" onclick="switchExecutionTab('buy')" class="px-4 py-2 rounded-xl text-xs font-bold font-mono transition flex items-center gap-2 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 cursor-pointer">
+            <i data-lucide="arrow-down-left" class="w-4 h-4 text-emerald-400"></i>
+            <span>3-Tranche Buy Entry Roadmap</span>
+          </button>
+          <button type="button" id="tabBtnExitRoadmap" onclick="switchExecutionTab('exit')" class="px-4 py-2 rounded-xl text-xs font-bold font-mono transition flex items-center gap-2 bg-slate-800/80 text-slate-400 hover:text-white border border-slate-700 cursor-pointer">
+            <i data-lucide="arrow-up-right" class="w-4 h-4 text-amber-400"></i>
+            <span>3-Tranche Profit-Taking & Exit Roadmap</span>
+          </button>
+        </div>
+
         <!-- SUB-SECTION 2: 3-Tranche Buy Entry Roadmap -->
         <div id="trancheRoadmapSection" class="space-y-4">
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
@@ -688,6 +700,222 @@
               <button type="button" id="copyOrdersBtn" onclick="copyTrancheOrderSummary()" class="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center justify-center gap-2 transition shadow-lg shadow-indigo-600/30 cursor-pointer">
                 <i data-lucide="copy" class="w-4 h-4"></i>
                 <span id="copyOrdersBtnText">Copy Limit Orders to Clipboard</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- SUB-SECTION 3: 3-Tranche Profit-Taking & Exit Roadmap (Switchable via Tab) -->
+        <div id="exitRoadmapSection" class="hidden space-y-5">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <h4 class="text-base font-bold text-white flex items-center gap-2">
+                <span class="w-6 h-6 rounded-md bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-xs font-mono text-amber-300 font-bold">2</span>
+                <span>3-Tranche Profit-Taking & Exit Roadmap</span>
+              </h4>
+              <p class="text-xs text-slate-400 mt-0.5">Based on William O'Neil (CAN SLIM) and Peter Lynch rules. Scale out into strength and eliminate emotional holding.</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-mono text-slate-400">Current Market Price:</span>
+              <b id="exitCurrentPriceRef" class="text-sm font-black font-mono text-emerald-400">$--</b>
+            </div>
+          </div>
+
+          <!-- Position & Cost Basis Controls -->
+          <div class="p-4 sm:p-5 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+              
+              <!-- Cost Basis Input -->
+              <div class="md:col-span-5 space-y-2">
+                <label class="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                  <i data-lucide="tag" class="w-3.5 h-3.5 text-amber-400"></i> Your Purchase Price / Cost Basis ($)
+                </label>
+                <div class="relative flex items-center">
+                  <span class="absolute left-2.5 text-xs font-mono text-slate-400">$</span>
+                  <input type="number" id="exitCostBasisInput" value="24.91" min="0.01" max="100000" step="0.10"
+                    oninput="onExitCostBasisChange(this.value)"
+                    class="w-full pl-6 pr-3 py-1.5 text-xs font-bold font-mono rounded-lg bg-slate-950 border border-slate-700 text-white focus:outline-none focus:border-amber-500">
+                </div>
+              </div>
+
+              <!-- Position Size (Shares or Dollars) -->
+              <div class="md:col-span-4 space-y-2">
+                <label class="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                  <i data-lucide="layers" class="w-3.5 h-3.5 text-indigo-400"></i> Number of Shares Owned
+                </label>
+                <div class="relative flex items-center">
+                  <input type="number" id="exitSharesInput" value="20" min="1" max="1000000" step="1"
+                    oninput="onExitSharesChange(this.value)"
+                    class="w-full px-3 py-1.5 text-xs font-bold font-mono rounded-lg bg-slate-950 border border-slate-700 text-white focus:outline-none focus:border-indigo-500">
+                  <span class="text-[11px] text-slate-400 ml-2 font-mono whitespace-nowrap" id="exitPositionTotalVal">≈ $0 total</span>
+                </div>
+              </div>
+
+              <!-- Live Return Status Badge -->
+              <div class="md:col-span-3 flex md:justify-end items-center pt-2 md:pt-0">
+                <div class="text-right">
+                  <span class="text-[10px] text-slate-400 font-mono block">Unrealized Performance</span>
+                  <span id="exitCurrentGainBadge" class="text-xs font-black font-mono px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 inline-block mt-0.5">
+                    +0.0% Break-even
+                  </span>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- 3 Exit Tranches Cards Grid -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            
+            <!-- Exit Tranche 1: De-Risking -->
+            <div class="p-4 sm:p-5 rounded-2xl bg-slate-900/90 border border-amber-500/30 flex flex-col justify-between space-y-3 relative overflow-hidden">
+              <div class="space-y-2">
+                <div class="flex items-center justify-between">
+                  <span class="px-2.5 py-1 rounded-lg text-[10px] font-black font-mono uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                    1️⃣ TRANCHE 1: DE-RISK
+                  </span>
+                  <span id="exitT1GainBadge" class="text-[11px] font-bold font-mono text-amber-400">+25.0% PROFIT</span>
+                </div>
+                <div>
+                  <span class="text-[11px] text-slate-400 uppercase tracking-wider block font-bold">Take-Profit Target Price</span>
+                  <div class="flex items-baseline gap-2 mt-0.5">
+                    <span id="exitT1Price" class="text-2xl font-black font-mono text-white">$--</span>
+                    <span class="text-xs font-bold font-mono text-amber-400">(Limit Sell 33%)</span>
+                  </div>
+                </div>
+                <div class="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800/80 font-mono text-xs space-y-1">
+                  <div class="flex justify-between">
+                    <span class="text-slate-400">Order:</span>
+                    <b id="exitT1OrderText" class="text-slate-200">Sell 7 shares (33%)</b>
+                  </div>
+                  <div class="flex justify-between text-emerald-400 font-semibold">
+                    <span>Cash Extracted:</span>
+                    <b id="exitT1CashVal">+$0.00</b>
+                  </div>
+                </div>
+              </div>
+              <p class="text-xs text-slate-300 leading-relaxed pt-2 border-t border-slate-800/60">
+                <b class="text-white">William O'Neil 25% Rule:</b> Growth stocks face natural resistance at +20% to +25%. Taking 33% off the table guarantees you never let a winning investment turn into a losing trade.
+              </p>
+            </div>
+
+            <!-- Exit Tranche 2: 100% Capital Recovery -->
+            <div class="p-4 sm:p-5 rounded-2xl bg-slate-900/90 border border-emerald-500/30 flex flex-col justify-between space-y-3 relative overflow-hidden">
+              <div class="space-y-2">
+                <div class="flex items-center justify-between">
+                  <span class="px-2.5 py-1 rounded-lg text-[10px] font-black font-mono uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                    2️⃣ TRANCHE 2: RECOVER CAPITAL
+                  </span>
+                  <span id="exitT2GainBadge" class="text-[11px] font-bold font-mono text-emerald-400">+50.0% PROFIT</span>
+                </div>
+                <div>
+                  <span class="text-[11px] text-slate-400 uppercase tracking-wider block font-bold">Consensus Profit Price</span>
+                  <div class="flex items-baseline gap-2 mt-0.5">
+                    <span id="exitT2Price" class="text-2xl font-black font-mono text-white">$--</span>
+                    <span class="text-xs font-bold font-mono text-emerald-400">(Limit Sell 33%)</span>
+                  </div>
+                </div>
+                <div class="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800/80 font-mono text-xs space-y-1">
+                  <div class="flex justify-between">
+                    <span class="text-slate-400">Order:</span>
+                    <b id="exitT2OrderText" class="text-slate-200">Sell 7 shares (33%)</b>
+                  </div>
+                  <div class="flex justify-between text-emerald-400 font-semibold">
+                    <span>Cumulative Cash Out:</span>
+                    <b id="exitT2CashVal">+$0.00</b>
+                  </div>
+                </div>
+              </div>
+              <p class="text-xs text-slate-300 leading-relaxed pt-2 border-t border-slate-800/60">
+                <b class="text-white">The "House Money" Milestone:</b> Once Tranche 2 fills, you have retrieved 100% of your initial out-of-pocket capital back into your bank. Your remaining shares are 100% risk-free.
+              </p>
+            </div>
+
+            <!-- Exit Tranche 3: Peter Lynch Moonbag -->
+            <div class="p-4 sm:p-5 rounded-2xl bg-slate-900/90 border border-indigo-500/30 flex flex-col justify-between space-y-3 relative overflow-hidden">
+              <div class="space-y-2">
+                <div class="flex items-center justify-between">
+                  <span class="px-2.5 py-1 rounded-lg text-[10px] font-black font-mono uppercase tracking-wider bg-indigo-500/20 text-indigo-300 border border-indigo-500/40">
+                    3️⃣ TRANCHE 3: MOONBAG
+                  </span>
+                  <span class="text-[11px] font-bold font-mono text-indigo-400">LET WINNERS RUN 🚀</span>
+                </div>
+                <div>
+                  <span class="text-[11px] text-slate-400 uppercase tracking-wider block font-bold">Target Exit Price</span>
+                  <div class="flex items-baseline gap-2 mt-0.5">
+                    <span class="text-2xl font-black font-mono text-indigo-300">Uncapped</span>
+                    <span class="text-xs font-bold font-mono text-indigo-400">(Hold Remaining 34%)</span>
+                  </div>
+                </div>
+                <div class="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800/80 font-mono text-xs space-y-1">
+                  <div class="flex justify-between">
+                    <span class="text-slate-400">Position Retained:</span>
+                    <b id="exitT3SharesText" class="text-slate-200">Hold 6 shares (34%)</b>
+                  </div>
+                  <div class="flex justify-between text-indigo-300">
+                    <span>Exit Trigger:</span>
+                    <b class="text-amber-400 font-mono">Score &lt; 50 or Thesis Breaks</b>
+                  </div>
+                </div>
+              </div>
+              <p class="text-xs text-slate-300 leading-relaxed pt-2 border-t border-slate-800/60">
+                <b class="text-white">Peter Lynch Rule:</b> "Never cut the flowers to water the weeds." You don't sell your best performers just because they went up. Let the remaining 34% compound for multi-bagger upside.
+              </p>
+            </div>
+
+          </div>
+
+          <!-- Emergency Downside Stop-Loss & Capital Floor -->
+          <div class="p-5 rounded-2xl bg-rose-950/20 border border-rose-500/30 space-y-3">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-rose-500/20 pb-3">
+              <div class="flex items-center gap-2">
+                <i data-lucide="shield-alert" class="w-5 h-5 text-rose-400"></i>
+                <h5 class="text-xs font-bold uppercase tracking-wider text-rose-300">Non-Negotiable Downside Stop-Loss & Thesis Floor</h5>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-mono text-slate-400">Maximum Allowed Loss:</span>
+                <span class="px-2.5 py-0.5 rounded text-xs font-bold font-mono bg-rose-500/20 text-rose-300 border border-rose-500/40">-8.0% MAX</span>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+              <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800 font-mono">
+                <span class="text-[10px] text-slate-400 uppercase tracking-wider block">Hard Stop Trigger Price</span>
+                <b id="exitStopPrice" class="text-lg font-black text-rose-400 mt-0.5 block">$--</b>
+                <span class="text-[10px] text-slate-500 block">Cut position if closing below</span>
+              </div>
+              <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800 font-mono">
+                <span class="text-[10px] text-slate-400 uppercase tracking-wider block">Max Capital At Risk</span>
+                <b id="exitMaxRiskDollar" class="text-lg font-black text-rose-300 mt-0.5 block">-$0.00</b>
+                <span class="text-[10px] text-slate-500 block">Total worst-case loss</span>
+              </div>
+              <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800 font-mono">
+                <span class="text-[10px] text-slate-400 uppercase tracking-wider block">Reward-To-Risk Asymmetry</span>
+                <b id="exitRewardRiskRatio" class="text-lg font-black text-emerald-400 mt-0.5 block">3.1 : 1</b>
+                <span class="text-[10px] text-emerald-400/80 block">Asymmetric institutional edge</span>
+              </div>
+            </div>
+
+            <p class="text-xs text-slate-300 leading-relaxed pt-1">
+              <b class="text-white">William O'Neil Cardinal Rule:</b> "Always cut every loss at 7% to 8% without hesitation or second-guessing." Taking small, controlled losses keeps you in the game forever; holding on to losing positions hoping they recover is how accounts get wiped out.
+            </p>
+          </div>
+
+          <!-- Exit Order Summary & Clipboard Action -->
+          <div class="p-5 rounded-2xl bg-gradient-to-r from-slate-900 via-amber-950/20 to-slate-900 border border-amber-500/30 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div class="space-y-1">
+              <div class="flex items-center gap-2">
+                <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i>
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-300">Complete Profit-Taking Plan</span>
+              </div>
+              <p class="text-xs text-slate-400 leading-relaxed">
+                By setting your GTC Limit Sells at <b id="exitSummaryPricesText" class="text-amber-300 font-mono">Tranche 1 & Tranche 2</b>, your profits will be locked in automatically while you sleep.
+              </p>
+            </div>
+            <div>
+              <button type="button" id="copyExitOrdersBtn" onclick="copyExitOrderSummary()" class="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-slate-950 font-black text-xs flex items-center justify-center gap-2 transition shadow-lg shadow-amber-600/30 cursor-pointer">
+                <i data-lucide="copy" class="w-4 h-4"></i>
+                <span id="copyExitOrdersBtnText">Copy Exit Orders to Clipboard</span>
               </button>
             </div>
           </div>
@@ -1742,8 +1970,22 @@
       const currRef = document.getElementById('trancheCurrentPriceRef');
       if (currRef) currRef.innerText = `$${executionState.price.toFixed(2)}`;
 
+      const exitCurrRef = document.getElementById('exitCurrentPriceRef');
+      if (exitCurrRef) exitCurrRef.innerText = `$${executionState.price.toFixed(2)}`;
+
+      executionState.costBasis = executionState.price;
+      const initialShares = executionState.price > 0 ? Math.max(1, Math.round(500 / executionState.price)) : 20;
+      executionState.exitShares = initialShares;
+
+      const costInput = document.getElementById('exitCostBasisInput');
+      if (costInput) costInput.value = executionState.price.toFixed(2);
+
+      const sharesInput = document.getElementById('exitSharesInput');
+      if (sharesInput) sharesInput.value = initialShares;
+
       updatePositionSizer();
       updateTrancheRoadmap();
+      updateExitRoadmap();
     }
 
     function setPortfolioSize(size) {
@@ -1959,6 +2201,144 @@ Generated via StockPulse: https://stockpulse-app-gamma.vercel.app`;
         if (btn) {
           const original = btn.innerText;
           btn.innerText = "✓ Limit Orders Copied!";
+          setTimeout(() => { btn.innerText = original; }, 2500);
+        }
+      }).catch(err => {
+        console.error("Clipboard copy failed:", err);
+      });
+    }
+
+    function switchExecutionTab(tab) {
+      const buySection = document.getElementById('trancheRoadmapSection');
+      const exitSection = document.getElementById('exitRoadmapSection');
+      const buyBtn = document.getElementById('tabBtnBuyRoadmap');
+      const exitBtn = document.getElementById('tabBtnExitRoadmap');
+
+      if (!buySection || !exitSection || !buyBtn || !exitBtn) return;
+
+      if (tab === 'buy') {
+        buySection.classList.remove('hidden');
+        exitSection.classList.add('hidden');
+        buyBtn.className = "px-4 py-2 rounded-xl text-xs font-bold font-mono transition flex items-center gap-2 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 cursor-pointer";
+        exitBtn.className = "px-4 py-2 rounded-xl text-xs font-bold font-mono transition flex items-center gap-2 bg-slate-800/80 text-slate-400 hover:text-white border border-slate-700 cursor-pointer";
+      } else {
+        buySection.classList.add('hidden');
+        exitSection.classList.remove('hidden');
+        exitBtn.className = "px-4 py-2 rounded-xl text-xs font-bold font-mono transition flex items-center gap-2 bg-amber-500/20 text-amber-300 border border-amber-500/40 cursor-pointer";
+        buyBtn.className = "px-4 py-2 rounded-xl text-xs font-bold font-mono transition flex items-center gap-2 bg-slate-800/80 text-slate-400 hover:text-white border border-slate-700 cursor-pointer";
+      }
+      lucide.createIcons();
+    }
+
+    function onExitCostBasisChange(val) {
+      const parsed = parseFloat(val);
+      if (!isNaN(parsed) && parsed > 0) {
+        executionState.costBasis = parsed;
+        updateExitRoadmap();
+      }
+    }
+
+    function onExitSharesChange(val) {
+      const parsed = parseInt(val, 10);
+      if (!isNaN(parsed) && parsed > 0) {
+        executionState.exitShares = parsed;
+        updateExitRoadmap();
+      }
+    }
+
+    function updateExitRoadmap() {
+      const p = executionState.price || 100.0;
+      const cost = executionState.costBasis || p;
+      const shares = executionState.exitShares || 20;
+
+      const totalVal = shares * p;
+      const totalCost = shares * cost;
+      const unrealizedDollar = totalVal - totalCost;
+      const unrealizedPct = cost > 0 ? ((unrealizedDollar / totalCost) * 100) : 0;
+
+      const posTotalEl = document.getElementById('exitPositionTotalVal');
+      if (posTotalEl) posTotalEl.innerText = `≈ $${Math.round(totalCost).toLocaleString()} cost basis`;
+
+      const gainBadge = document.getElementById('exitCurrentGainBadge');
+      if (gainBadge) {
+        if (unrealizedDollar > 0) {
+          gainBadge.innerText = `+${unrealizedPct.toFixed(1)}% Unrealized Profit`;
+          gainBadge.className = "text-xs font-black font-mono px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 inline-block mt-0.5";
+        } else if (unrealizedDollar < 0) {
+          gainBadge.innerText = `${unrealizedPct.toFixed(1)}% Unrealized Loss`;
+          gainBadge.className = "text-xs font-black font-mono px-2.5 py-1 rounded-lg bg-rose-500/20 text-rose-300 border border-rose-500/40 inline-block mt-0.5";
+        } else {
+          gainBadge.innerText = "0.0% Break-even";
+          gainBadge.className = "text-xs font-black font-mono px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 border border-slate-700 inline-block mt-0.5";
+        }
+      }
+
+      // Exit Tranche 1: O'Neil 25% De-risking
+      const t1GainPct = 25.0;
+      const t1Price = cost * 1.25;
+      const t1Shares = Math.max(1, Math.round(shares * 0.33));
+      const t1Cash = t1Shares * t1Price;
+
+      // Exit Tranche 2: 50% Capital Recovery
+      const t2GainPct = 50.0;
+      const t2Price = cost * 1.50;
+      const t2Shares = Math.max(1, Math.round(shares * 0.33));
+      const t2Cash = t2Shares * t2Price;
+      const cumCash = t1Cash + t2Cash;
+
+      // Exit Tranche 3: Moonbag Remaining
+      const t3Shares = Math.max(0, shares - t1Shares - t2Shares);
+
+      // Stop loss calculations (O'Neil -8% rule)
+      const stopPrice = cost * 0.92;
+      const maxRiskDollar = (cost - stopPrice) * shares;
+      const expectedT1Gain = (t1Price - cost) * t1Shares;
+      const expectedT2Gain = (t2Price - cost) * t2Shares;
+      const totalExpectedGain = expectedT1Gain + expectedT2Gain;
+      const rewardRiskRatio = maxRiskDollar > 0 ? (totalExpectedGain / maxRiskDollar).toFixed(1) : "3.1";
+
+      // Render Tranche 1
+      document.getElementById('exitT1Price').innerText = `$${t1Price.toFixed(2)}`;
+      document.getElementById('exitT1OrderText').innerText = `Sell ${t1Shares} shares (33%)`;
+      document.getElementById('exitT1CashVal').innerText = `+$${Math.round(t1Cash).toLocaleString()}`;
+
+      // Render Tranche 2
+      document.getElementById('exitT2Price').innerText = `$${t2Price.toFixed(2)}`;
+      document.getElementById('exitT2OrderText').innerText = `Sell ${t2Shares} shares (33%)`;
+      document.getElementById('exitT2CashVal').innerText = `+$${Math.round(cumCash).toLocaleString()} (Full Capital Returned)`;
+
+      // Render Tranche 3
+      document.getElementById('exitT3SharesText').innerText = `Hold ${t3Shares} shares (${Math.round((t3Shares/shares)*100)}%)`;
+
+      // Render Stop Loss
+      document.getElementById('exitStopPrice').innerText = `$${stopPrice.toFixed(2)}`;
+      document.getElementById('exitMaxRiskDollar').innerText = `-$${Math.round(maxRiskDollar).toLocaleString()}`;
+      document.getElementById('exitRewardRiskRatio').innerText = `${rewardRiskRatio} : 1`;
+
+      document.getElementById('exitSummaryPricesText').innerText = `$${t1Price.toFixed(2)} (Tranche 1) & $${t2Price.toFixed(2)} (Tranche 2)`;
+
+      executionState.exitOrderSummaryText = 
+`💰 StockPulse 3-Tranche Profit-Taking & Exit Plan:
+Ticker: ${executionState.ticker} (${executionState.name})
+Your Cost Basis: $${cost.toFixed(2)} | Shares: ${shares} (Total Cost: $${Math.round(totalCost).toLocaleString()})
+Current Market Price: $${p.toFixed(2)}
+
+1️⃣ Tranche 1 (De-Risk - 33%): LIMIT SELL @ $${t1Price.toFixed(2)} (+25.0% Gain) (Sell ${t1Shares} sh -> Cash: +$${Math.round(t1Cash).toLocaleString()})
+2️⃣ Tranche 2 (100% Capital Recovery - 33%): LIMIT SELL @ $${t2Price.toFixed(2)} (+50.0% Gain) (Sell ${t2Shares} sh -> Cumulative Cash: +$${Math.round(cumCash).toLocaleString()})
+3️⃣ Tranche 3 (Peter Lynch Moonbag - 34%): HOLD ${t3Shares} SHARES (Let Winner Run With Zero Risk)
+
+🛑 Non-Negotiable Hard Stop-Loss: CLOSE @ $${stopPrice.toFixed(2)} (-8.0% Max Loss Capped at -$${Math.round(maxRiskDollar).toLocaleString()})
+🏆 Asymmetric Reward-to-Risk Edge: ${rewardRiskRatio}:1
+Generated via StockPulse: https://stockpulse-app-gamma.vercel.app`;
+    }
+
+    function copyExitOrderSummary() {
+      if (!executionState.exitOrderSummaryText) return;
+      navigator.clipboard.writeText(executionState.exitOrderSummaryText).then(() => {
+        const btn = document.getElementById('copyExitOrdersBtnText');
+        if (btn) {
+          const original = btn.innerText;
+          btn.innerText = "✓ Exit Orders Copied!";
           setTimeout(() => { btn.innerText = original; }, 2500);
         }
       }).catch(err => {
