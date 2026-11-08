@@ -2328,10 +2328,11 @@ def get_stock_data(ticker_symbol: str) -> Dict[str, Any]:
     symbol = ticker_symbol.strip().upper()
     now = time.time()
     
-    # Check cache
+    # Check cache (only reuse if competitors has peers)
     if symbol in _CACHE:
         entry = _CACHE[symbol]
-        if now - entry["timestamp"] < CACHE_TTL_SECONDS:
+        cached_peers = (entry.get("data") or {}).get("competitors", {}).get("peers", [])
+        if (now - entry["timestamp"] < CACHE_TTL_SECONDS) and len(cached_peers) > 0:
             return entry["data"]
 
     metrics = {}
