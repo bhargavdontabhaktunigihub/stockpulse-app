@@ -413,6 +413,47 @@
         </div>
       </div>
 
+      <!-- Direct Competitors & Industry Moat Matrix Card -->
+      <div id="competitorsCard" class="glass-card rounded-3xl p-6 sm:p-8 space-y-6">
+        <!-- Header -->
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-800 pb-5">
+          <div>
+            <div class="flex items-center gap-2">
+              <div class="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center">
+                <i data-lucide="building-2" class="w-4 h-4 text-cyan-400"></i>
+              </div>
+              <h3 class="text-xl font-bold text-white tracking-tight">Direct Competitors & Industry Moat Matrix</h3>
+            </div>
+            <p class="text-xs text-slate-400 mt-1">
+              Side-by-side valuation, pricing power & growth momentum benchmarks in <span id="competitorIndustryTag" class="text-cyan-400 font-semibold">Industry Peers</span>
+            </p>
+          </div>
+
+          <!-- Quick Head-to-Head Search -->
+          <div class="flex items-center gap-2">
+            <div class="relative">
+              <input id="customRivalInput" type="text" placeholder="Rival ticker (e.g. AMD)..." class="w-36 sm:w-44 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 uppercase font-mono" />
+            </div>
+            <button id="customRivalBtn" onclick="launchCustomBattle()" class="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-lg shadow-cyan-500/20 transition-all">
+              <span>⚔️ Battle</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Competitor Peer Grid / Cards -->
+        <div id="competitorGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <!-- Populated dynamically by renderCompetitors -->
+        </div>
+
+        <!-- Footnote / Guidance -->
+        <div class="p-4 rounded-2xl bg-slate-900/60 border border-slate-800/80 flex items-start gap-3">
+          <i data-lucide="swords" class="w-5 h-5 text-cyan-400 shrink-0 mt-0.5"></i>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            <b class="text-white">Moat Intelligence Tip:</b> A great company is only an exceptional investment if bought at a reasonable valuation relative to its industry peers. Click <b class="text-cyan-400">"⚔️ Moat Battle"</b> on any competitor card to simulate a 5-round showdown and discover who commands superior pricing power, capital efficiency, and market share momentum.
+          </p>
+        </div>
+      </div>
+
       <!-- Execution & Risk Management Center: Anti-Blowup Position Sizer & 3-Tranche Buy Entry Planner -->
       <div id="executionCenterCard" class="glass-card rounded-3xl p-6 sm:p-8 space-y-8">
         
@@ -1558,6 +1599,46 @@
 
   </main>
 
+  <!-- Head-to-Head 5-Round Moat Battle Modal -->
+  <div id="moatBattleModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="relative w-full max-w-2xl bg-slate-900 border border-cyan-500/40 rounded-3xl p-6 sm:p-8 shadow-2xl shadow-cyan-500/20 max-h-[90vh] overflow-y-auto space-y-6">
+      
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center">
+            <i data-lucide="swords" class="w-5 h-5 text-cyan-400"></i>
+          </div>
+          <div>
+            <h3 class="text-lg font-extrabold text-white">5-Round Head-to-Head Moat Battle</h3>
+            <p id="battleSubtitle" class="text-xs text-slate-400">Comparing financial armor & earnings power</p>
+          </div>
+        </div>
+        <button onclick="closeBattleModal()" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition-colors">
+          ✕
+        </button>
+      </div>
+
+      <!-- Battle Scoreboard -->
+      <div id="battleScoreboard" class="p-5 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800/60 to-slate-900 border border-slate-700/80 text-center space-y-3">
+        <!-- Populated dynamically -->
+      </div>
+
+      <!-- 5 Rounds Breakdown -->
+      <div id="battleRoundsList" class="space-y-3">
+        <!-- Populated dynamically -->
+      </div>
+
+      <!-- Close / Bottom Actions -->
+      <div class="pt-2 flex items-center justify-between">
+        <span class="text-xs text-slate-500 font-mono">StockPulse Quantitative Moat Engine</span>
+        <button onclick="closeBattleModal()" class="px-5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs transition-colors">
+          Close Showdown
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Legal Educational Footer -->
   <footer class="border-t border-slate-800/80 py-8 bg-slate-950 text-center text-xs text-slate-500 space-y-2">
     <p>StockPulse is an educational algorithmic due diligence tool. Nothing on this application constitutes registered investment advice.</p>
@@ -1693,6 +1774,7 @@
       renderChart(data.history, evalData.ticker);
       renderAnnualPerformance(data.annual_returns, evalData.ticker);
       renderAnalystTargets(data.analyst_targets, evalData.ticker);
+      renderCompetitors(data.competitors, evalData.ticker, m);
       initExecutionCenter(m, evalData);
       renderDividendScorecard(data.dividend_data, evalData.ticker);
       renderInsiderTrading(data.insider_activity, evalData.ticker);
@@ -1978,6 +2060,219 @@
       } else {
         targetBullishPct.className = "text-xs font-bold font-mono text-rose-400";
       }
+    }
+
+    // ==========================================
+    // DIRECT COMPETITORS & INDUSTRY MOAT MATRIX
+    // ==========================================
+    let currentActiveTicker = 'NVDA';
+
+    function renderCompetitors(compData, currentTicker, metrics) {
+      currentActiveTicker = currentTicker || 'NVDA';
+      const compCard = document.getElementById('competitorsCard');
+      const grid = document.getElementById('competitorGrid');
+      const tagEl = document.getElementById('competitorIndustryTag');
+
+      if (!compData || !compData.peers || compData.peers.length === 0) {
+        if (compCard) compCard.classList.add('hidden');
+        return;
+      }
+      if (compCard) compCard.classList.remove('hidden');
+
+      if (tagEl) {
+        tagEl.innerText = compData.industry || metrics.industry || metrics.sector || "Industry Peers";
+      }
+
+      const peers = compData.peers || [];
+      grid.innerHTML = peers.map(peer => {
+        const chgColor = peer.change_pct >= 0 ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' : 'text-rose-400 bg-rose-500/10 border-rose-500/20';
+        const chgSign = peer.change_pct >= 0 ? '+' : '';
+        const peDisplay = peer.trailing_pe ? `${peer.trailing_pe}x` : (peer.forward_pe ? `${peer.forward_pe}x (Fwd)` : 'N/A');
+        const gmDisplay = peer.gross_margin !== null && peer.gross_margin !== undefined ? `${peer.gross_margin}%` : 'N/A';
+        const grDisplay = peer.revenue_growth !== null && peer.revenue_growth !== undefined ? `${peer.revenue_growth > 0 ? '+' : ''}${peer.revenue_growth}%` : 'N/A';
+        const upsideDisplay = peer.upside_pct !== null && peer.upside_pct !== undefined ? `${peer.upside_pct > 0 ? '+' : ''}${peer.upside_pct}%` : 'N/A';
+
+        const tagsHtml = (peer.tags || []).slice(0, 2).map(t => {
+          const bg = t.type === 'positive' ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' : (t.type === 'negative' ? 'bg-rose-500/15 text-rose-300 border-rose-500/30' : 'bg-slate-800 text-slate-300 border-slate-700');
+          return `<span class="px-2 py-0.5 rounded-md text-[10px] font-semibold border ${bg}">${t.badge || t.label}</span>`;
+        }).join('');
+
+        return `
+          <div class="glass-card rounded-2xl p-4 border border-slate-800 hover:border-cyan-500/40 transition-all flex flex-col justify-between space-y-3 group">
+            <div>
+              <div class="flex items-start justify-between gap-2">
+                <div>
+                  <div class="flex items-center gap-1.5">
+                    <span class="text-base font-black font-mono text-white group-hover:text-cyan-400 transition-colors">${peer.symbol}</span>
+                    <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold border ${chgColor}">${chgSign}${peer.change_pct}%</span>
+                  </div>
+                  <p class="text-xs text-slate-400 truncate max-w-[150px]" title="${peer.name}">${peer.name}</p>
+                </div>
+                <div class="text-right">
+                  <div class="text-sm font-extrabold text-white font-mono">$${peer.price.toFixed(2)}</div>
+                  <span class="text-[10px] text-slate-500 font-mono">${peer.market_cap_fmt}</span>
+                </div>
+              </div>
+
+              <!-- Comparative Tags -->
+              <div class="flex flex-wrap gap-1.5 mt-2.5">
+                ${tagsHtml || `<span class="px-2 py-0.5 rounded-md text-[10px] font-semibold border bg-slate-800 text-slate-300 border-slate-700">${peer.recommendation}</span>`}
+              </div>
+
+              <!-- Key Peer Metrics -->
+              <div class="mt-3 grid grid-cols-2 gap-2 text-xs border-t border-slate-800/80 pt-2.5">
+                <div>
+                  <span class="text-[10px] text-slate-500 block">P/E Multiple</span>
+                  <span class="font-mono font-bold text-slate-200">${peDisplay}</span>
+                </div>
+                <div>
+                  <span class="text-[10px] text-slate-500 block">Gross Margin</span>
+                  <span class="font-mono font-bold text-slate-200">${gmDisplay}</span>
+                </div>
+                <div>
+                  <span class="text-[10px] text-slate-500 block">Revenue Growth</span>
+                  <span class="font-mono font-bold ${peer.revenue_growth >= 0 ? 'text-emerald-400' : 'text-rose-400'}">${grDisplay}</span>
+                </div>
+                <div>
+                  <span class="text-[10px] text-slate-500 block">Wall St Upside</span>
+                  <span class="font-mono font-bold text-cyan-400">${upsideDisplay}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="pt-2 flex items-center gap-2 border-t border-slate-800/80">
+              <button onclick="loadTicker('${peer.symbol}')" class="flex-1 py-1.5 px-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white text-xs font-semibold flex items-center justify-center gap-1 transition-colors">
+                <i data-lucide="search" class="w-3 h-3 text-cyan-400"></i>
+                <span>Analyze</span>
+              </button>
+              <button onclick="startMoatBattle('${currentTicker}', '${peer.symbol}')" class="py-1.5 px-2.5 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-xs font-bold flex items-center justify-center gap-1 transition-colors">
+                <span>⚔️ Battle</span>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      lucide.createIcons();
+    }
+
+    async function startMoatBattle(ticker1, ticker2) {
+      const modal = document.getElementById('moatBattleModal');
+      const subtitle = document.getElementById('battleSubtitle');
+      const board = document.getElementById('battleScoreboard');
+      const roundsList = document.getElementById('battleRoundsList');
+
+      if (!modal) return;
+      modal.classList.remove('hidden');
+
+      subtitle.innerText = `Simulating 5-round showdown: ${ticker1} vs ${ticker2}...`;
+      board.innerHTML = `
+        <div class="py-8 flex flex-col items-center justify-center gap-3">
+          <div class="w-8 h-8 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin"></div>
+          <span class="text-xs text-slate-400 font-mono">Running quantitative balance sheet & valuation simulation...</span>
+        </div>
+      `;
+      roundsList.innerHTML = '';
+
+      try {
+        const res = await fetch(`/api/compare/${ticker1}/${ticker2}`);
+        if (!res.ok) throw new Error('Failed to run comparison');
+        const data = await res.json();
+
+        subtitle.innerText = `${data.ticker1} (${data.name1}) vs ${data.ticker2} (${data.name2})`;
+
+        const badgeColor = data.winner === data.ticker1 ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40' : (data.winner === data.ticker2 ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40' : 'bg-amber-500/20 text-amber-300 border-amber-500/40');
+
+        board.innerHTML = `
+          <div class="flex items-center justify-around gap-4 py-2">
+            <div class="text-center">
+              <span class="text-[10px] text-slate-400 font-mono uppercase">Contender A</span>
+              <div class="text-2xl font-black font-mono text-cyan-400">${data.ticker1}</div>
+              <div class="text-xs text-slate-300">$${data.price1 ? data.price1.toFixed(2) : '--'}</div>
+              <div class="mt-2 text-3xl font-extrabold font-mono text-white">${data.score1} <span class="text-xs font-normal text-slate-400">PTS</span></div>
+            </div>
+
+            <div class="flex flex-col items-center">
+              <div class="w-10 h-10 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center font-black font-mono text-xs text-amber-400 shadow-inner">
+                VS
+              </div>
+              <span class="text-[10px] text-slate-500 uppercase tracking-widest mt-1">5 ROUNDS</span>
+            </div>
+
+            <div class="text-center">
+              <span class="text-[10px] text-slate-400 font-mono uppercase">Contender B</span>
+              <div class="text-2xl font-black font-mono text-indigo-400">${data.ticker2}</div>
+              <div class="text-xs text-slate-300">$${data.price2 ? data.price2.toFixed(2) : '--'}</div>
+              <div class="mt-2 text-3xl font-extrabold font-mono text-white">${data.score2} <span class="text-xs font-normal text-slate-400">PTS</span></div>
+            </div>
+          </div>
+
+          <div class="pt-2 border-t border-slate-800/80 flex flex-col items-center gap-1.5">
+            <span class="px-4 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider border ${badgeColor}">
+              🏆 ${data.verdict_badge}: ${data.winner === 'DRAW' ? 'HONORABLE DRAW' : data.winner + ' WINS'}
+            </span>
+            <p class="text-xs text-slate-300 max-w-lg mx-auto leading-relaxed mt-1">${data.verdict_desc}</p>
+          </div>
+        `;
+
+        roundsList.innerHTML = (data.rounds || []).map(r => {
+          const w1 = r.winner === data.ticker1;
+          const w2 = r.winner === data.ticker2;
+          const isTie = r.winner === 'Tie';
+
+          const val1Style = w1 ? 'text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20' : 'text-slate-400';
+          const val2Style = w2 ? 'text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20' : 'text-slate-400';
+
+          return `
+            <div class="p-3.5 rounded-2xl bg-slate-900/70 border border-slate-800 hover:border-slate-700 transition-all space-y-2">
+              <div class="flex items-center justify-between text-xs">
+                <span class="font-mono text-cyan-400 font-bold">Round ${r.round_num}: ${r.category}</span>
+                <span class="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
+                  ${isTie ? '⚖️ Draw' : `👑 ${r.winner} Won`}
+                </span>
+              </div>
+              <div class="flex items-center justify-between font-mono text-xs">
+                <div>
+                  <span class="text-[10px] text-slate-500 block">${data.ticker1}</span>
+                  <span class="${val1Style}">${r.val1}</span>
+                </div>
+                <div class="text-center text-[10px] text-slate-500 font-sans italic">
+                  ${r.metric_name}
+                </div>
+                <div class="text-right">
+                  <span class="text-[10px] text-slate-500 block">${data.ticker2}</span>
+                  <span class="${val2Style}">${r.val2}</span>
+                </div>
+              </div>
+              <p class="text-[11px] text-slate-400 leading-normal border-t border-slate-800/60 pt-1.5">${r.analysis}</p>
+            </div>
+          `;
+        }).join('');
+
+        lucide.createIcons();
+      } catch (e) {
+        board.innerHTML = `
+          <div class="p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs text-center">
+            Unable to complete comparison for ${ticker1} vs ${ticker2}. Verify both symbols have active market listings.
+          </div>
+        `;
+      }
+    }
+
+    function closeBattleModal() {
+      const modal = document.getElementById('moatBattleModal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function launchCustomBattle() {
+      const input = document.getElementById('customRivalInput');
+      const rival = input ? input.value.trim().toUpperCase() : '';
+      if (!rival) {
+        if (input) input.focus();
+        return;
+      }
+      startMoatBattle(currentActiveTicker, rival);
     }
 
     // ==========================================

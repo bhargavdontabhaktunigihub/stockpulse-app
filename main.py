@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import os
 import requests
 
-from data_fetcher import get_stock_data, get_fear_and_greed_index
+from data_fetcher import get_stock_data, get_fear_and_greed_index, get_head_to_head_battle, get_competitors
 from engine import evaluate_stock
 
 app = FastAPI(title="Stock Pulse Evaluator API", version="1.0.0")
@@ -52,8 +52,24 @@ async def evaluate_ticker_endpoint(ticker: str):
         "analyst_targets": data.get("analyst_targets", {}),
         "bull_bear_cases": data.get("bull_bear_cases", {}),
         "dividend_data": data.get("dividend_data", {}),
-        "news": data.get("news", [])
+        "news": data.get("news", []),
+        "competitors": data.get("competitors", {})
     }
+
+@app.get("/api/compare/{ticker1}/{ticker2}")
+async def compare_endpoint(ticker1: str, ticker2: str):
+    """
+    Simulates a 5-round head-to-head quantitative Moat Battle between two rival companies.
+    """
+    clean1 = ticker1.strip().upper()
+    clean2 = ticker2.strip().upper()
+    if not clean1 or not clean2:
+        raise HTTPException(status_code=400, detail="Both ticker symbols are required.")
+    try:
+        battle = get_head_to_head_battle(clean1, clean2)
+        return battle
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Comparison failed: {str(e)}")
 
 @app.get("/api/search")
 async def search_endpoint(q: str = ""):

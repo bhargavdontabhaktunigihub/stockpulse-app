@@ -6,7 +6,8 @@ Uses yfinance with cached fallback data for resilience.
 """
 import time
 from datetime import datetime
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import requests
 import pandas as pd
 import yfinance as yf
@@ -1203,6 +1204,864 @@ def fetch_stock_news(symbol: str, company_name: str = "") -> List[Dict[str, Any]
         }
     ]
 
+# Curated High-Relevance Competitor & Rival Directory
+CURATED_COMPETITORS: Dict[str, List[str]] = {
+    # AI / Hardware / Semiconductors
+    "NVDA": ["AMD", "AVGO", "INTC", "QCOM", "TSM"],
+    "AMD": ["NVDA", "INTC", "AVGO", "QCOM", "ARM"],
+    "INTC": ["NVDA", "AMD", "TSM", "AVGO", "TXN"],
+    "AVGO": ["NVDA", "QCOM", "MRVL", "TXN", "ADI"],
+    "TSM": ["NVDA", "ASML", "INTC", "AMAT", "LRCX"],
+    "QCOM": ["AVGO", "NVDA", "TXN", "MRVL", "AMD"],
+    "ARM": ["NVDA", "AMD", "QCOM", "INTC"],
+    "MU": ["WDC", "STX", "NVDA", "AMD"],
+    "ASML": ["TSM", "AMAT", "LRCX", "KLAC"],
+    "AMAT": ["LRCX", "KLAC", "ASML", "TSM"],
+
+    # Big Tech / Cloud / Platforms
+    "AAPL": ["MSFT", "GOOGL", "AMZN", "META"],
+    "MSFT": ["GOOGL", "AMZN", "AAPL", "ORCL", "CRM"],
+    "GOOGL": ["META", "MSFT", "AMZN", "AAPL"],
+    "GOOG": ["META", "MSFT", "AMZN", "AAPL"],
+    "META": ["GOOGL", "SNAP", "PINS", "MSFT", "RDDT"],
+    "AMZN": ["WMT", "MSFT", "BABA", "SHOP", "TGT"],
+
+    # Bitcoin / AI Datacenters / Compute Infrastructure
+    "IREN": ["CLSK", "MARA", "RIOT", "CIFR", "CORZ", "WULF"],
+    "CLSK": ["IREN", "MARA", "RIOT", "CIFR", "WULF"],
+    "MARA": ["IREN", "CLSK", "RIOT", "CIFR", "CORZ"],
+    "RIOT": ["IREN", "CLSK", "MARA", "CIFR", "WULF"],
+    "CIFR": ["IREN", "CLSK", "MARA", "RIOT", "CORZ"],
+    "CORZ": ["IREN", "CLSK", "MARA", "CIFR", "WULF"],
+    "WULF": ["IREN", "CLSK", "MARA", "RIOT", "CIFR"],
+
+    # Automotive / Clean Energy / EV
+    "TSLA": ["RIVN", "LCID", "GM", "F", "BYDDF"],
+    "RIVN": ["TSLA", "LCID", "GM", "F", "NIO"],
+    "LCID": ["TSLA", "RIVN", "NIO", "GM", "F"],
+    "F": ["GM", "TSLA", "STLA", "HMC", "TM"],
+    "GM": ["F", "TSLA", "STLA", "HMC", "TM"],
+
+    # Enterprise Software, Data & Cybersecurity
+    "PLTR": ["SNOW", "AI", "DDOG", "PATH", "MSTR"],
+    "SNOW": ["PLTR", "DDOG", "MDB", "MSFT", "ORCL"],
+    "CRM": ["MSFT", "ORCL", "NOW", "WDAY", "HUBS"],
+    "NOW": ["CRM", "WDAY", "ORCL", "MSFT"],
+    "CRWD": ["PANW", "FTNT", "ZS", "S", "NET"],
+    "PANW": ["CRWD", "FTNT", "ZS", "CHKP", "NET"],
+    "NET": ["FSLY", "AKAM", "CRWD", "PANW", "DDOG"],
+    "DDOG": ["SNOW", "PLTR", "DT", "NEWR", "NET"],
+    "MDB": ["SNOW", "ORCL", "AMZN", "MSFT"],
+
+    # Fintech, Exchanges & Banking
+    "COIN": ["HOOD", "MARA", "RIOT", "CLSK", "IBKR"],
+    "HOOD": ["SCHW", "COIN", "SOFI", "IBKR", "UPST"],
+    "SOFI": ["HOOD", "UPST", "AFRM", "LC", "NU"],
+    "PYPL": ["SQ", "ADYEN", "V", "MA"],
+    "SQ": ["PYPL", "TOST", "SHOP", "COIN"],
+    "V": ["MA", "AXP", "PYPL", "DFS"],
+    "MA": ["V", "AXP", "PYPL", "DFS"],
+    "JPM": ["BAC", "WFC", "C", "MS", "GS"],
+    "BAC": ["JPM", "WFC", "C", "MS", "GS"],
+    "GS": ["MS", "JPM", "C", "BAC", "SCHW"],
+    "MS": ["GS", "JPM", "SCHW", "C", "BAC"],
+
+    # Consumer Staples / Food & Beverage / Retail
+    "KO": ["PEP", "MNST", "KDP", "CELH", "COKE"],
+    "PEP": ["KO", "MNST", "KDP", "MDLZ", "CELH"],
+    "MNST": ["CELH", "KO", "PEP", "KDP"],
+    "CELH": ["MNST", "KO", "PEP", "KDP"],
+    "COST": ["WMT", "TGT", "BJ", "AMZN"],
+    "WMT": ["COST", "TGT", "AMZN", "KR"],
+    "TGT": ["WMT", "COST", "AMZN", "DG"],
+    "MCD": ["SBUX", "YUM", "QSR", "WEN", "CMG"],
+    "SBUX": ["MCD", "DNUT", "QSR", "YUM", "BROS"],
+    "CMG": ["MCD", "YUM", "QSR", "SHAK", "WING"],
+    "NKE": ["LULU", "UAA", "DECK", "ADDYY", "ONON"],
+    "LULU": ["NKE", "UAA", "DECK", "ADDYY", "LEVI"],
+
+    # Healthcare / Pharma / Biotech
+    "LLY": ["NVO", "JNJ", "PFE", "MRK", "ABBV"],
+    "NVO": ["LLY", "JNJ", "PFE", "MRK", "AZN"],
+    "JNJ": ["PFE", "MRK", "ABBV", "LLY", "BMY"],
+    "PFE": ["JNJ", "MRK", "ABBV", "BMY", "LLY"],
+    "MRK": ["PFE", "JNJ", "ABBV", "BMY", "LLY"],
+    "ABBV": ["JNJ", "LLY", "PFE", "MRK", "AMGN"],
+    "UNH": ["ELV", "CVS", "CI", "HUM", "CNC"],
+
+    # Energy & Aerospace / Defense
+    "XOM": ["CVX", "COP", "BP", "SHEL", "OXY"],
+    "CVX": ["XOM", "COP", "BP", "SHEL", "OXY"],
+    "COP": ["XOM", "CVX", "EOG", "OXY", "BP"],
+    "OXY": ["XOM", "CVX", "COP", "EOG"],
+    "BA": ["LMT", "RTX", "GD", "NOC"],
+    "LMT": ["BA", "RTX", "NOC", "GD"],
+    "RTX": ["LMT", "BA", "GD", "NOC"],
+
+    # Media / Streaming
+    "NFLX": ["DIS", "WBD", "CMCSA", "PARA"],
+    "DIS": ["NFLX", "WBD", "CMCSA", "PARA"],
+
+    # Broad Market & Sector ETFs
+    "VOO": ["SPY", "QQQ", "IVV", "VTI", "DIA"],
+    "SPY": ["VOO", "QQQ", "IVV", "VTI", "DIA"],
+    "QQQ": ["VOO", "SPY", "VGT", "XLK", "IWM"],
+    "VTI": ["VOO", "SPY", "ITOT", "SCHB", "QQQ"],
+    "IWM": ["QQQ", "SPY", "VOO", "VB", "IJR"]
+}
+
+# Fallback presets for popular tickers (guarantees offline/sandbox resilience)
+FALLBACK_COMPETITORS: Dict[str, Dict[str, Any]] = {
+    "NVDA": {
+        "base_ticker": "NVDA",
+        "industry": "Semiconductors & AI Hardware",
+        "sector": "Technology",
+        "peers": [
+            {
+                "symbol": "AMD",
+                "name": "Advanced Micro Devices, Inc.",
+                "price": 148.50,
+                "change_pct": 2.15,
+                "market_cap": 240500000000,
+                "market_cap_fmt": "$240.5B",
+                "trailing_pe": 95.9,
+                "forward_pe": 32.1,
+                "gross_margin": 51.2,
+                "revenue_growth": 18.0,
+                "recommendation": "Strong Buy",
+                "target_mean": 185.00,
+                "upside_pct": 24.6,
+                "tags": [
+                    {"label": "Pricier P/E (95.9x vs 27.1x)", "type": "neutral", "badge": "Premium"},
+                    {"label": "Lower Margin (51.2% vs 75.0%)", "type": "negative", "badge": "Lower Margin"},
+                    {"label": "Slower Growth (+18% vs +96%)", "type": "negative", "badge": "Slower"}
+                ]
+            },
+            {
+                "symbol": "AVGO",
+                "name": "Broadcom Inc.",
+                "price": 178.20,
+                "change_pct": 1.10,
+                "market_cap": 832000000000,
+                "market_cap_fmt": "$832.0B",
+                "trailing_pe": 37.5,
+                "forward_pe": 24.2,
+                "gross_margin": 62.4,
+                "revenue_growth": 47.0,
+                "recommendation": "Strong Buy",
+                "target_mean": 215.00,
+                "upside_pct": 20.7,
+                "tags": [
+                    {"label": "Pricier P/E (37.5x vs 27.1x)", "type": "neutral", "badge": "Premium"},
+                    {"label": "Lower Margin (62.4% vs 75.0%)", "type": "negative", "badge": "Lower Margin"},
+                    {"label": "Slower Growth (+47% vs +96%)", "type": "negative", "badge": "Slower"}
+                ]
+            },
+            {
+                "symbol": "INTC",
+                "name": "Intel Corporation",
+                "price": 23.10,
+                "change_pct": -0.85,
+                "market_cap": 99500000000,
+                "market_cap_fmt": "$99.5B",
+                "trailing_pe": None,
+                "forward_pe": 28.5,
+                "gross_margin": 38.5,
+                "revenue_growth": -6.0,
+                "recommendation": "Hold",
+                "target_mean": 25.00,
+                "upside_pct": 8.2,
+                "tags": [
+                    {"label": "Unprofitable Trailing P/E", "type": "negative", "badge": "Loss"},
+                    {"label": "Lower Margin (38.5% vs 75.0%)", "type": "negative", "badge": "Lower Margin"},
+                    {"label": "Negative Growth (-6% vs +96%)", "type": "negative", "badge": "Contraction"}
+                ]
+            },
+            {
+                "symbol": "QCOM",
+                "name": "QUALCOMM Incorporated",
+                "price": 165.40,
+                "change_pct": 1.45,
+                "market_cap": 185000000000,
+                "market_cap_fmt": "$185.0B",
+                "trailing_pe": 16.8,
+                "forward_pe": 14.2,
+                "gross_margin": 55.8,
+                "revenue_growth": 19.0,
+                "recommendation": "Buy",
+                "target_mean": 205.00,
+                "upside_pct": 23.9,
+                "tags": [
+                    {"label": "Cheaper P/E (16.8x vs 27.1x)", "type": "positive", "badge": "🏷️ Value"},
+                    {"label": "Lower Margin (55.8% vs 75.0%)", "type": "negative", "badge": "Lower Margin"},
+                    {"label": "Slower Growth (+19% vs +96%)", "type": "negative", "badge": "Slower"}
+                ]
+            }
+        ]
+    },
+    "IREN": {
+        "base_ticker": "IREN",
+        "industry": "Bitcoin Mining & AI Cloud Infrastructure",
+        "sector": "Technology / Digital Infrastructure",
+        "peers": [
+            {
+                "symbol": "CLSK",
+                "name": "CleanSpark, Inc.",
+                "price": 12.45,
+                "change_pct": 4.25,
+                "market_cap": 2850000000,
+                "market_cap_fmt": "$2.85B",
+                "trailing_pe": 18.2,
+                "forward_pe": 11.5,
+                "gross_margin": 47.0,
+                "revenue_growth": 120.0,
+                "recommendation": "Strong Buy",
+                "target_mean": 22.50,
+                "upside_pct": 80.7,
+                "tags": [
+                    {"label": "Pure Play BTC Miner", "type": "positive", "badge": "🚀 Growth"},
+                    {"label": "Low Forward P/E (11.5x)", "type": "positive", "badge": "🏷️ Value"}
+                ]
+            },
+            {
+                "symbol": "MARA",
+                "name": "MARA Holdings, Inc.",
+                "price": 19.20,
+                "change_pct": 3.80,
+                "market_cap": 5200000000,
+                "market_cap_fmt": "$5.20B",
+                "trailing_pe": 22.4,
+                "forward_pe": 14.8,
+                "gross_margin": 40.1,
+                "revenue_growth": 35.0,
+                "recommendation": "Buy",
+                "target_mean": 27.00,
+                "upside_pct": 40.6,
+                "tags": [
+                    {"label": "Largest BTC Treasury", "type": "neutral", "badge": "Treasury"},
+                    {"label": "Higher Scale ($5.2B Cap)", "type": "positive", "badge": "Scale"}
+                ]
+            },
+            {
+                "symbol": "RIOT",
+                "name": "Riot Platforms, Inc.",
+                "price": 11.80,
+                "change_pct": 2.90,
+                "market_cap": 3500000000,
+                "market_cap_fmt": "$3.50B",
+                "trailing_pe": None,
+                "forward_pe": 15.2,
+                "gross_margin": 23.9,
+                "revenue_growth": 28.0,
+                "recommendation": "Strong Buy",
+                "target_mean": 18.00,
+                "upside_pct": 52.5,
+                "tags": [
+                    {"label": "Gigawatt Scale Texas Facility", "type": "positive", "badge": "Infrastructure"},
+                    {"label": "Zero Debt Balance Sheet", "type": "positive", "badge": "🛡️ Low Debt"}
+                ]
+            },
+            {
+                "symbol": "CIFR",
+                "name": "Cipher Digital Inc.",
+                "price": 5.65,
+                "change_pct": 5.10,
+                "market_cap": 1800000000,
+                "market_cap_fmt": "$1.80B",
+                "trailing_pe": 16.0,
+                "forward_pe": 9.8,
+                "gross_margin": 45.2,
+                "revenue_growth": 85.0,
+                "recommendation": "Strong Buy",
+                "target_mean": 9.50,
+                "upside_pct": 68.1,
+                "tags": [
+                    {"label": "Cheaper Multiple (9.8x Fwd)", "type": "positive", "badge": "🏷️ Value"},
+                    {"label": "High Growth HPC Conversion", "type": "positive", "badge": "🚀 Growth"}
+                ]
+            }
+        ]
+    },
+    "GOOGL": {
+        "base_ticker": "GOOGL",
+        "industry": "Internet Content & Cloud Platforms",
+        "sector": "Communication Services",
+        "peers": [
+            {
+                "symbol": "META",
+                "name": "Meta Platforms, Inc.",
+                "price": 585.00,
+                "change_pct": 1.20,
+                "market_cap": 1480000000000,
+                "market_cap_fmt": "$1.48T",
+                "trailing_pe": 26.5,
+                "forward_pe": 22.0,
+                "gross_margin": 81.5,
+                "revenue_growth": 22.0,
+                "recommendation": "Strong Buy",
+                "target_mean": 650.00,
+                "upside_pct": 11.1,
+                "tags": [
+                    {"label": "Pricier P/E (26.5x vs 17.1x)", "type": "neutral", "badge": "Premium"},
+                    {"label": "Higher Margin (81.5% vs 57.2%)", "type": "positive", "badge": "💎 Margin"}
+                ]
+            },
+            {
+                "symbol": "MSFT",
+                "name": "Microsoft Corporation",
+                "price": 425.00,
+                "change_pct": 0.90,
+                "market_cap": 3150000000000,
+                "market_cap_fmt": "$3.15T",
+                "trailing_pe": 34.2,
+                "forward_pe": 28.5,
+                "gross_margin": 69.8,
+                "revenue_growth": 15.5,
+                "recommendation": "Strong Buy",
+                "target_mean": 495.00,
+                "upside_pct": 16.5,
+                "tags": [
+                    {"label": "Pricier P/E (34.2x vs 17.1x)", "type": "neutral", "badge": "Premium"},
+                    {"label": "Higher Margin (69.8% vs 57.2%)", "type": "positive", "badge": "💎 Margin"}
+                ]
+            },
+            {
+                "symbol": "AMZN",
+                "name": "Amazon.com Inc.",
+                "price": 185.00,
+                "change_pct": 1.35,
+                "market_cap": 1920000000000,
+                "market_cap_fmt": "$1.92T",
+                "trailing_pe": 42.1,
+                "forward_pe": 31.0,
+                "gross_margin": 48.2,
+                "revenue_growth": 11.2,
+                "recommendation": "Strong Buy",
+                "target_mean": 225.00,
+                "upside_pct": 21.6,
+                "tags": [
+                    {"label": "Pricier P/E (42.1x vs 17.1x)", "type": "neutral", "badge": "Premium"},
+                    {"label": "Lower Margin (48.2% vs 57.2%)", "type": "negative", "badge": "Lower Margin"}
+                ]
+            },
+            {
+                "symbol": "AAPL",
+                "name": "Apple Inc.",
+                "price": 230.00,
+                "change_pct": 0.45,
+                "market_cap": 3500000000000,
+                "market_cap_fmt": "$3.50T",
+                "trailing_pe": 33.8,
+                "forward_pe": 29.5,
+                "gross_margin": 46.2,
+                "revenue_growth": 6.1,
+                "recommendation": "Moderate Buy",
+                "target_mean": 250.00,
+                "upside_pct": 8.7,
+                "tags": [
+                    {"label": "Pricier P/E (33.8x vs 17.1x)", "type": "neutral", "badge": "Premium"},
+                    {"label": "Slower Growth (+6.1% vs +24.0%)", "type": "negative", "badge": "Slower"}
+                ]
+            }
+        ]
+    },
+    "KO": {
+        "base_ticker": "KO",
+        "industry": "Beverages - Non-Alcoholic",
+        "sector": "Consumer Defensive",
+        "peers": [
+            {
+                "symbol": "PEP",
+                "name": "PepsiCo, Inc.",
+                "price": 172.50,
+                "change_pct": 0.25,
+                "market_cap": 237000000000,
+                "market_cap_fmt": "$237.0B",
+                "trailing_pe": 25.2,
+                "forward_pe": 20.8,
+                "gross_margin": 54.6,
+                "revenue_growth": 2.5,
+                "recommendation": "Hold",
+                "target_mean": 185.00,
+                "upside_pct": 7.2,
+                "tags": [
+                    {"label": "Cheaper P/E (25.2x vs 26.8x)", "type": "positive", "badge": "🏷️ Value"},
+                    {"label": "Lower Margin (54.6% vs 60.5%)", "type": "negative", "badge": "Lower Margin"}
+                ]
+            },
+            {
+                "symbol": "MNST",
+                "name": "Monster Beverage Corp.",
+                "price": 51.20,
+                "change_pct": 0.80,
+                "market_cap": 52000000000,
+                "market_cap_fmt": "$52.0B",
+                "trailing_pe": 31.4,
+                "forward_pe": 26.0,
+                "gross_margin": 53.8,
+                "revenue_growth": 11.8,
+                "recommendation": "Buy",
+                "target_mean": 58.00,
+                "upside_pct": 13.3,
+                "tags": [
+                    {"label": "Faster Growth (+11.8% vs +5.0%)", "type": "positive", "badge": "🚀 Growth"},
+                    {"label": "Pricier P/E (31.4x vs 26.8x)", "type": "neutral", "badge": "Premium"}
+                ]
+            },
+            {
+                "symbol": "KDP",
+                "name": "Keurig Dr Pepper Inc.",
+                "price": 36.80,
+                "change_pct": -0.15,
+                "market_cap": 50500000000,
+                "market_cap_fmt": "$50.5B",
+                "trailing_pe": 23.5,
+                "forward_pe": 18.2,
+                "gross_margin": 55.1,
+                "revenue_growth": 3.8,
+                "recommendation": "Moderate Buy",
+                "target_mean": 40.00,
+                "upside_pct": 8.7,
+                "tags": [
+                    {"label": "Cheaper P/E (23.5x vs 26.8x)", "type": "positive", "badge": "🏷️ Value"}
+                ]
+            },
+            {
+                "symbol": "CELH",
+                "name": "Celsius Holdings, Inc.",
+                "price": 32.40,
+                "change_pct": 1.75,
+                "market_cap": 7800000000,
+                "market_cap_fmt": "$7.8B",
+                "trailing_pe": 35.0,
+                "forward_pe": 24.5,
+                "gross_margin": 50.2,
+                "revenue_growth": 23.0,
+                "recommendation": "Buy",
+                "target_mean": 45.00,
+                "upside_pct": 38.9,
+                "tags": [
+                    {"label": "Faster Growth (+23% vs +5%)", "type": "positive", "badge": "🚀 Growth"}
+                ]
+            }
+        ]
+    },
+    "VOO": {
+        "base_ticker": "VOO",
+        "industry": "Large-Cap Blend Equity ETF",
+        "sector": "Broad Market Index",
+        "peers": [
+            {
+                "symbol": "SPY",
+                "name": "SPDR S&P 500 ETF Trust",
+                "price": 585.20,
+                "change_pct": 0.40,
+                "market_cap": 590000000000,
+                "market_cap_fmt": "$590.0B",
+                "trailing_pe": 26.5,
+                "forward_pe": 22.8,
+                "gross_margin": 40.0,
+                "revenue_growth": 9.0,
+                "recommendation": "Core Index",
+                "target_mean": None,
+                "upside_pct": None,
+                "tags": [{"label": "Highest Liquidity / Options Volume", "type": "positive", "badge": "💧 Liquidity"}]
+            },
+            {
+                "symbol": "QQQ",
+                "name": "Invesco QQQ Trust (Nasdaq 100)",
+                "price": 502.80,
+                "change_pct": 0.65,
+                "market_cap": 310000000000,
+                "market_cap_fmt": "$310.0B",
+                "trailing_pe": 32.0,
+                "forward_pe": 26.5,
+                "gross_margin": 52.0,
+                "revenue_growth": 14.5,
+                "recommendation": "Tech Growth",
+                "target_mean": None,
+                "upside_pct": None,
+                "tags": [{"label": "Higher Tech Growth Tilt", "type": "positive", "badge": "🚀 Tech"}]
+            },
+            {
+                "symbol": "VTI",
+                "name": "Vanguard Total Stock Market ETF",
+                "price": 284.50,
+                "change_pct": 0.38,
+                "market_cap": 420000000000,
+                "market_cap_fmt": "$420.0B",
+                "trailing_pe": 25.8,
+                "forward_pe": 22.0,
+                "gross_margin": 40.0,
+                "revenue_growth": 8.8,
+                "recommendation": "Total Market",
+                "target_mean": None,
+                "upside_pct": None,
+                "tags": [{"label": "Broad US Market (3,600+ Stocks)", "type": "positive", "badge": "🌐 Diversified"}]
+            },
+            {
+                "symbol": "IWM",
+                "name": "iShares Russell 2000 ETF",
+                "price": 225.40,
+                "change_pct": 0.95,
+                "market_cap": 75000000000,
+                "market_cap_fmt": "$75.0B",
+                "trailing_pe": 18.5,
+                "forward_pe": 16.2,
+                "gross_margin": 32.0,
+                "revenue_growth": 6.5,
+                "recommendation": "Small-Cap",
+                "target_mean": None,
+                "upside_pct": None,
+                "tags": [{"label": "Small-Cap Value & Rate Cut Play", "type": "neutral", "badge": "Small Cap"}]
+            }
+        ]
+    }
+}
+
+def format_market_cap(cap: Optional[int]) -> str:
+    if not cap or cap <= 0:
+        return "N/A"
+    if cap >= 1e12:
+        return f"${cap / 1e12:.2f}T"
+    if cap >= 1e9:
+        return f"${cap / 1e9:.2f}B"
+    if cap >= 1e6:
+        return f"${cap / 1e6:.1f}M"
+    return f"${cap:,}"
+
+def fetch_single_competitor(peer_sym: str, base_metrics: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    try:
+        t = yf.Ticker(peer_sym)
+        inf = t.info or {}
+        p = inf.get("currentPrice") or inf.get("regularMarketPrice") or inf.get("previousClose") or 0.0
+        pc = inf.get("previousClose") or p
+        chg = round(((p - pc) / pc) * 100, 2) if pc else 0.0
+        cap = inf.get("marketCap") or 0
+        pe = inf.get("trailingPE")
+        fwd_pe = inf.get("forwardPE")
+        gm = inf.get("grossMargins")
+        rev_gr = inf.get("revenueGrowth")
+        rec = inf.get("recommendationKey", "hold")
+        mean_target = inf.get("targetMeanPrice")
+        upside = round(((mean_target - p) / p) * 100, 1) if (mean_target and p > 0) else None
+
+        base_pe = base_metrics.get("trailing_pe")
+        base_gm = base_metrics.get("gross_margin")
+        base_gr = base_metrics.get("revenue_growth")
+
+        pe_val = round(float(pe), 1) if pe else None
+        fwd_pe_val = round(float(fwd_pe), 1) if fwd_pe else None
+        gm_val = round(float(gm) * 100, 1) if gm is not None else None
+        rev_gr_val = round(float(rev_gr) * 100, 1) if rev_gr is not None else None
+
+        comp_tags = []
+        if pe_val is not None and base_pe:
+            if pe_val < base_pe and pe_val > 0:
+                comp_tags.append({"label": f"Cheaper ({pe_val}x vs {base_pe:.1f}x)", "type": "positive", "badge": "🏷️ Value"})
+            elif pe_val > base_pe:
+                comp_tags.append({"label": f"Pricier ({pe_val}x vs {base_pe:.1f}x)", "type": "neutral", "badge": "Premium"})
+
+        if gm_val is not None and base_gm is not None:
+            base_gm_pct = round(base_gm * 100, 1) if base_gm <= 1.0 else round(base_gm, 1)
+            if gm_val > base_gm_pct:
+                comp_tags.append({"label": f"Higher Margin ({gm_val}% vs {base_gm_pct}%)", "type": "positive", "badge": "💎 Margin"})
+            elif gm_val < base_gm_pct:
+                comp_tags.append({"label": f"Lower Margin ({gm_val}% vs {base_gm_pct}%)", "type": "negative", "badge": "Lower Margin"})
+
+        if rev_gr_val is not None and base_gr is not None:
+            base_gr_pct = round(base_gr * 100, 1) if base_gr <= 1.0 else round(base_gr, 1)
+            if rev_gr_val > base_gr_pct:
+                comp_tags.append({"label": f"Faster Growth ({rev_gr_val:+}% vs {base_gr_pct:+ }%)", "type": "positive", "badge": "🚀 Growth"})
+            elif rev_gr_val < base_gr_pct:
+                comp_tags.append({"label": f"Slower Growth ({rev_gr_val:+}% vs {base_gr_pct:+ }%)", "type": "negative", "badge": "Slower"})
+
+        return {
+            "symbol": peer_sym,
+            "name": inf.get("shortName") or inf.get("longName") or peer_sym,
+            "price": round(float(p), 2),
+            "change_pct": float(chg),
+            "market_cap": int(cap),
+            "market_cap_fmt": format_market_cap(cap),
+            "trailing_pe": pe_val,
+            "forward_pe": fwd_pe_val,
+            "gross_margin": gm_val,
+            "revenue_growth": rev_gr_val,
+            "recommendation": str(rec).replace("_", " ").title(),
+            "target_mean": round(float(mean_target), 2) if mean_target else None,
+            "upside_pct": upside,
+            "tags": comp_tags
+        }
+    except Exception as e:
+        print(f"Error fetching competitor {peer_sym}: {e}")
+        return None
+
+def get_competitor_symbols(symbol: str, info: Dict[str, Any], is_etf: bool = False) -> List[str]:
+    symbol = symbol.upper()
+    if symbol in CURATED_COMPETITORS:
+        return CURATED_COMPETITORS[symbol][:4]
+    
+    if is_etf:
+        return ["SPY", "QQQ", "VOO", "IWM"]
+
+    ind_key = info.get("industryKey")
+    if ind_key:
+        try:
+            ind = yf.Industry(ind_key)
+            tc = ind.top_companies
+            if tc is not None and not tc.empty:
+                syms = [s for s in list(tc.index) if s != symbol and "." not in s][:4]
+                if syms:
+                    return syms
+        except Exception as e:
+            print(f"Industry discovery failed for {symbol}: {e}")
+
+    sec_key = info.get("sectorKey")
+    if sec_key:
+        try:
+            sec = yf.Sector(sec_key)
+            tc = sec.top_companies
+            if tc is not None and not tc.empty:
+                syms = [s for s in list(tc.index) if s != symbol and "." not in s][:4]
+                if syms:
+                    return syms
+        except Exception as e:
+            print(f"Sector discovery failed for {symbol}: {e}")
+
+    return ["AAPL", "MSFT", "GOOGL", "AMZN"]
+
+def get_competitors(symbol: str, info: Dict[str, Any], base_metrics: Dict[str, Any], is_etf: bool = False) -> Dict[str, Any]:
+    symbol = symbol.upper()
+    if symbol in FALLBACK_COMPETITORS and (not info or not info.get("regularMarketPrice")):
+        return FALLBACK_COMPETITORS[symbol]
+
+    peer_symbols = get_competitor_symbols(symbol, info, is_etf)
+    peers_data = []
+
+    try:
+        with ThreadPoolExecutor(max_workers=min(5, len(peer_symbols))) as executor:
+            futures = [executor.submit(fetch_single_competitor, sym, base_metrics) for sym in peer_symbols]
+            for f in futures:
+                try:
+                    res = f.result(timeout=3.5)
+                    if res:
+                        peers_data.append(res)
+                except Exception as e:
+                    print(f"Competitor fetch timed out or error: {e}")
+    except Exception as e_pool:
+        print(f"ThreadPool error fetching competitors for {symbol}: {e_pool}")
+
+    if not peers_data and symbol in FALLBACK_COMPETITORS:
+        return FALLBACK_COMPETITORS[symbol]
+
+    return {
+        "base_ticker": symbol,
+        "industry": base_metrics.get("industry") or info.get("industry", "Industry"),
+        "sector": base_metrics.get("sector") or info.get("sector", "Sector"),
+        "peers": peers_data
+    }
+
+def get_head_to_head_battle(ticker1: str, ticker2: str) -> Dict[str, Any]:
+    """
+    Simulates a 5-round quantitative Moat Battle between two rival companies:
+    Round 1: Valuation Multiple (P/E & Forward P/E)
+    Round 2: Profit Margins & Pricing Power (Gross Profit Margin)
+    Round 3: Revenue Growth Velocity (YoY Top-Line Momentum)
+    Round 4: Wall Street Consensus & 12-Month Target Upside
+    Round 5: Scale & Balance Sheet Armor (Market Capitalization)
+    """
+    sym1 = ticker1.strip().upper()
+    sym2 = ticker2.strip().upper()
+
+    t1, t2 = yf.Ticker(sym1), yf.Ticker(sym2)
+    i1, i2 = t1.info or {}, t2.info or {}
+
+    p1 = i1.get("currentPrice") or i1.get("regularMarketPrice") or 0.0
+    p2 = i2.get("currentPrice") or i2.get("regularMarketPrice") or 0.0
+    name1 = i1.get("shortName") or sym1
+    name2 = i2.get("shortName") or sym2
+
+    score1, score2 = 0, 0
+    rounds = []
+
+    # Round 1: Valuation
+    pe1 = i1.get("trailingPE")
+    pe2 = i2.get("trailingPE")
+    if pe1 and pe2 and pe1 > 0 and pe2 > 0:
+        if pe1 < pe2:
+            score1 += 1
+            r1_win = sym1
+            r1_text = f"{sym1} trades at a more attractive earnings multiple ({pe1:.1f}x vs {pe2:.1f}x)."
+        elif pe2 < pe1:
+            score2 += 1
+            r1_win = sym2
+            r1_text = f"{sym2} trades at a more attractive earnings multiple ({pe2:.1f}x vs {pe1:.1f}x)."
+        else:
+            r1_win = "Tie"
+            r1_text = f"Both trade at equivalent P/E multiples (~{pe1:.1f}x)."
+    elif pe1 and pe1 > 0:
+        score1 += 1
+        r1_win = sym1
+        r1_text = f"{sym1} is profitable with a P/E of {pe1:.1f}x, while {sym2} is operating at a net loss."
+    elif pe2 and pe2 > 0:
+        score2 += 1
+        r1_win = sym2
+        r1_text = f"{sym2} is profitable with a P/E of {pe2:.1f}x, while {sym1} is operating at a net loss."
+    else:
+        r1_win = "Tie"
+        r1_text = "Neither company currently exhibits positive GAAP earnings."
+
+    rounds.append({
+        "round_num": 1,
+        "category": "Valuation Multiple (P/E)",
+        "metric_name": "Trailing P/E",
+        "val1": f"{pe1:.1f}x" if pe1 else "Unprofitable",
+        "val2": f"{pe2:.1f}x" if pe2 else "Unprofitable",
+        "winner": r1_win,
+        "analysis": r1_text
+    })
+
+    # Round 2: Profit Margins & Pricing Power
+    gm1 = (i1.get("grossMargins") or 0) * 100
+    gm2 = (i2.get("grossMargins") or 0) * 100
+    if gm1 > gm2:
+        score1 += 1
+        r2_win = sym1
+        r2_text = f"{sym1} commands superior pricing power with higher gross margins ({gm1:.1f}% vs {gm2:.1f}%)."
+    elif gm2 > gm1:
+        score2 += 1
+        r2_win = sym2
+        r2_text = f"{sym2} commands superior pricing power with higher gross margins ({gm2:.1f}% vs {gm1:.1f}%)."
+    else:
+        r2_win = "Tie"
+        r2_text = "Both firms demonstrate identical gross profitability."
+
+    rounds.append({
+        "round_num": 2,
+        "category": "Pricing Power & Moat",
+        "metric_name": "Gross Profit Margin",
+        "val1": f"{gm1:.1f}%",
+        "val2": f"{gm2:.1f}%",
+        "winner": r2_win,
+        "analysis": r2_text
+    })
+
+    # Round 3: Revenue Growth Velocity
+    gr1 = (i1.get("revenueGrowth") or 0) * 100
+    gr2 = (i2.get("revenueGrowth") or 0) * 100
+    if gr1 > gr2:
+        score1 += 1
+        r3_win = sym1
+        r3_text = f"{sym1} is compounding revenue at a faster rate ({gr1:+.1f}% vs {gr2:+.1f}%)."
+    elif gr2 > gr1:
+        score2 += 1
+        r3_win = sym2
+        r3_text = f"{sym2} is compounding revenue at a faster rate ({gr2:+.1f}% vs {gr1:+.1f}%)."
+    else:
+        r3_win = "Tie"
+        r3_text = "Both firms show identical top-line growth velocity."
+
+    rounds.append({
+        "round_num": 3,
+        "category": "Top-Line Expansion",
+        "metric_name": "YoY Revenue Growth",
+        "val1": f"{gr1:+.1f}%",
+        "val2": f"{gr2:+.1f}%",
+        "winner": r3_win,
+        "analysis": r3_text
+    })
+
+    # Round 4: Wall Street 12M Target Upside
+    t_mean1 = i1.get("targetMeanPrice")
+    t_mean2 = i2.get("targetMeanPrice")
+    up1 = round(((t_mean1 - p1) / p1) * 100, 1) if (t_mean1 and p1 > 0) else 0.0
+    up2 = round(((t_mean2 - p2) / p2) * 100, 1) if (t_mean2 and p2 > 0) else 0.0
+
+    if up1 > up2:
+        score1 += 1
+        r4_win = sym1
+        r4_text = f"Wall Street analysts project {up1:+.1f}% upside for {sym1} vs {up2:+.1f}% for {sym2}."
+    elif up2 > up1:
+        score2 += 1
+        r4_win = sym2
+        r4_text = f"Wall Street analysts project {up2:+.1f}% upside for {sym2} vs {up1:+.1f}% for {sym1}."
+    else:
+        r4_win = "Tie"
+        r4_text = "Analysts forecast comparable return trajectories for both tickers."
+
+    rounds.append({
+        "round_num": 4,
+        "category": "Analyst Consensus",
+        "metric_name": "12-Month Target Upside",
+        "val1": f"{up1:+.1f}%",
+        "val2": f"{up2:+.1f}%",
+        "winner": r4_win,
+        "analysis": r4_text
+    })
+
+    # Round 5: Scale & War Chest Dominance
+    cap1 = i1.get("marketCap") or 0
+    cap2 = i2.get("marketCap") or 0
+    if cap1 > cap2:
+        score1 += 1
+        r5_win = sym1
+        r5_text = f"{sym1} possesses larger institutional scale and capital liquidity ({format_market_cap(cap1)} vs {format_market_cap(cap2)})."
+    elif cap2 > cap1:
+        score2 += 1
+        r5_win = sym2
+        r5_text = f"{sym2} possesses larger institutional scale and capital liquidity ({format_market_cap(cap2)} vs {format_market_cap(cap1)})."
+    else:
+        r5_win = "Tie"
+        r5_text = "Both entities command equal market capitalization."
+
+    rounds.append({
+        "round_num": 5,
+        "category": "Scale & Capital Armor",
+        "metric_name": "Market Capitalization",
+        "val1": format_market_cap(cap1),
+        "val2": format_market_cap(cap2),
+        "winner": r5_win,
+        "analysis": r5_text
+    })
+
+    if score1 > score2:
+        winner = sym1
+        diff = score1 - score2
+        if diff >= 3:
+            verdict_badge = "DOMINANT MOAT TKO"
+            verdict_desc = f"{sym1} dominates across key financial vectors ({score1} to {score2})."
+        else:
+            verdict_badge = "DECISION WIN"
+            verdict_desc = f"{sym1} edges out {sym2} in a close contest ({score1} to {score2})."
+    elif score2 > score1:
+        winner = sym2
+        diff = score2 - score1
+        if diff >= 3:
+            verdict_badge = "DOMINANT MOAT TKO"
+            verdict_desc = f"{sym2} dominates across key financial vectors ({score2} to {score1})."
+        else:
+            verdict_badge = "DECISION WIN"
+            verdict_desc = f"{sym2} edges out {sym1} in a close contest ({score2} to {score1})."
+    else:
+        winner = "DRAW"
+        verdict_badge = "HONORABLE DRAW"
+        verdict_desc = f"Both competitors tie at {score1} - {score2}. Investment choice depends on value vs growth preference."
+
+    return {
+        "ticker1": sym1,
+        "name1": name1,
+        "price1": p1,
+        "score1": score1,
+        "ticker2": sym2,
+        "name2": name2,
+        "price2": p2,
+        "score2": score2,
+        "winner": winner,
+        "verdict_badge": verdict_badge,
+        "verdict_desc": verdict_desc,
+        "rounds": rounds
+    }
+
 def get_stock_data(ticker_symbol: str) -> Dict[str, Any]:
     """
     Fetches live financial metrics, 1-year chart, 13-year annual returns,
@@ -1437,6 +2296,7 @@ def get_stock_data(ticker_symbol: str) -> Dict[str, Any]:
     )
 
     news_feed = fetch_stock_news(symbol, metrics.get("name", symbol))
+    competitors_data = get_competitors(symbol, info if ('info' in locals() and isinstance(info, dict)) else {}, metrics, is_etf=metrics.get("is_etf", False))
 
     result = {
         "metrics": metrics,
@@ -1448,7 +2308,8 @@ def get_stock_data(ticker_symbol: str) -> Dict[str, Any]:
         "analyst_targets": analyst_targets,
         "bull_bear_cases": bull_bear_cases,
         "dividend_data": dividend_data,
-        "news": news_feed
+        "news": news_feed,
+        "competitors": competitors_data
     }
     
     # Store in cache
