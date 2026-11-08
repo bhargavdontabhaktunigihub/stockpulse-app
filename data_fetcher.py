@@ -2320,12 +2320,91 @@ def get_head_to_head_battle(ticker1: str, ticker2: str) -> Dict[str, Any]:
         "rounds": rounds
     }
 
+COMMON_COMPANY_ALIASES: Dict[str, str] = {
+    "APPLE": "AAPL",
+    "GOOGLE": "GOOGL",
+    "ALPHABET": "GOOGL",
+    "MICROSOFT": "MSFT",
+    "AMAZON": "AMZN",
+    "TESLA": "TSLA",
+    "META": "META",
+    "FACEBOOK": "META",
+    "NETFLIX": "NFLX",
+    "NVIDIA": "NVDA",
+    "BERKSHIRE": "BRK-B",
+    "BERKSHIRE HATHAWAY": "BRK-B",
+    "COCA COLA": "KO",
+    "COCA-COLA": "KO",
+    "COKE": "KO",
+    "PEPSI": "PEP",
+    "PEPSICO": "PEP",
+    "WALMART": "WMT",
+    "TARGET": "TGT",
+    "COSTCO": "COST",
+    "NIKE": "NKE",
+    "STARBUCKS": "SBUX",
+    "MCDONALDS": "MCD",
+    "MCDONALD'S": "MCD",
+    "DISNEY": "DIS",
+    "WALT DISNEY": "DIS",
+    "BOEING": "BA",
+    "CLEANSPARK": "CLSK",
+    "IRIS ENERGY": "IREN",
+    "MARATHON": "MARA",
+    "MARATHON DIGITAL": "MARA",
+    "RIOT": "RIOT",
+    "RIOT PLATFORMS": "RIOT",
+    "COINBASE": "COIN",
+    "MICROSTRATEGY": "MSTR",
+    "PALANTIR": "PLTR",
+    "UBER": "UBER",
+    "AIRBNB": "ABNB",
+    "SPOTIFY": "SPOT",
+    "SHOPIFY": "SHOP",
+    "BROADCOM": "AVGO",
+    "QUALCOMM": "QCOM",
+    "ADVANCED MICRO DEVICES": "AMD",
+    "INTEL": "INTC",
+    "TAIWAN SEMICONDUCTOR": "TSM",
+    "TSMC": "TSM",
+    "JPMORGAN": "JPM",
+    "JP MORGAN": "JPM",
+    "EXXON": "XOM",
+    "EXXON MOBIL": "XOM",
+    "CHEVRON": "CVX",
+    "JOHNSON & JOHNSON": "JNJ",
+    "VISA": "V",
+    "MASTERCARD": "MA"
+}
+
+def resolve_company_name_to_ticker(query: str) -> Optional[str]:
+    """Resolves human company names or informal aliases to official tickers."""
+    clean = query.strip().upper()
+    if clean in COMMON_COMPANY_ALIASES:
+        return COMMON_COMPANY_ALIASES[clean]
+    try:
+        url = f"https://query2.finance.yahoo.com/v1/finance/search?q={requests.utils.quote(clean)}&quotesCount=5&newsCount=0"
+        headers = {"User-Agent": "Mozilla/5.0"}
+        r = requests.get(url, headers=headers, timeout=2.5)
+        if r.status_code == 200:
+            quotes = r.json().get("quotes", [])
+            for q in quotes:
+                sym = q.get("symbol", "")
+                qtype = q.get("quoteType", "")
+                if qtype in ["EQUITY", "ETF"] and "=" not in sym and "^" not in sym:
+                    if "." not in sym or sym in ["BRK.B", "BF.B"]:
+                        return sym.replace(".", "-")
+    except Exception:
+        pass
+    return None
+
 def get_stock_data(ticker_symbol: str) -> Dict[str, Any]:
     """
     Fetches live financial metrics, 1-year chart, 13-year annual returns,
     and SEC Form 4 insider activity.
     """
-    symbol = ticker_symbol.strip().upper()
+    raw_symbol = ticker_symbol.strip().upper()
+    symbol = COMMON_COMPANY_ALIASES.get(raw_symbol, raw_symbol)
     now = time.time()
     
     # Check cache (only reuse if competitors has peers)
@@ -2370,7 +2449,14 @@ def get_stock_data(ticker_symbol: str) -> Dict[str, Any]:
         t = yf.Ticker(symbol)
         info = t.info or {}
         
-        # Check if valid info returned
+        # Check if valid info returned, otherwise attempt smart name resolution
+        if not (info.get("regularMarketPrice") or info.get("currentPrice") or info.get("previousClose")):
+            resolved = resolve_company_name_to_ticker(raw_symbol)
+            if resolved and resolved != symbol:
+                symbol = resolved
+                t = yf.Ticker(symbol)
+                info = t.info or {}
+
         if info.get("regularMarketPrice") or info.get("currentPrice") or info.get("previousClose"):
             price = info.get("currentPrice") or info.get("regularMarketPrice") or info.get("previousClose") or 0.0
             prev_close = info.get("previousClose") or price
