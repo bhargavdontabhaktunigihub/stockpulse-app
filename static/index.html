@@ -28,6 +28,9 @@
     }
   </script>
   <style>
+    html {
+      scroll-behavior: smooth;
+    }
     @keyframes pulse-subtle {
       0%, 100% { opacity: 1; }
       50% { opacity: 0.7; }
@@ -39,6 +42,19 @@
       background: rgba(15, 23, 42, 0.75);
       backdrop-filter: blur(16px);
       border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .scrollbar-none::-webkit-scrollbar {
+      display: none;
+    }
+    .scrollbar-none {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    .active-nav-pill {
+      background: rgba(6, 182, 212, 0.18) !important;
+      color: #38bdf8 !important;
+      border-color: rgba(6, 182, 212, 0.5) !important;
+      box-shadow: 0 0 15px rgba(6, 182, 212, 0.25);
     }
   </style>
 </head>
@@ -121,6 +137,75 @@
         <button onclick="loadTicker('MSFT')" class="px-3 py-1 rounded-lg bg-slate-900 border border-slate-800 hover:border-emerald-500/50 hover:text-white transition">MSFT</button>
         <button onclick="loadTicker('AMZN')" class="px-3 py-1 rounded-lg bg-slate-900 border border-slate-800 hover:border-emerald-500/50 hover:text-white transition">AMZN</button>
       </div>
+
+      <!-- Recently Viewed Tickers Quick Bar (persists in localStorage) -->
+      <div id="recentTickersContainer" class="hidden flex items-center justify-center gap-2 overflow-x-auto py-1.5 scrollbar-none mt-2">
+        <span class="text-[11px] font-mono text-slate-500 uppercase flex items-center gap-1 shrink-0">
+          <i data-lucide="history" class="w-3 h-3 text-cyan-400"></i> Recent:
+        </span>
+        <div id="recentTickersList" class="flex items-center gap-1.5 flex-nowrap overflow-x-auto scrollbar-none py-1">
+          <!-- Populated by JavaScript -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Sticky Sub-Navbar Jump Bar (Frosted Glass with Scrollspy & Mini Ticker Badge) -->
+    <div id="stickyNavJumpBar" class="sticky top-[64px] z-40 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-2 bg-slate-950/85 backdrop-blur-xl border-b border-slate-800/80 transition-all duration-300">
+      <div class="max-w-7xl mx-auto flex items-center justify-between gap-3 overflow-x-auto scrollbar-none">
+        
+        <!-- Sticky Left: Live Mini Ticker (appears when scrolling past hero) -->
+        <div id="stickyMiniBadge" class="hidden sm:flex items-center gap-2.5 shrink-0 pr-3 border-r border-slate-800">
+          <span id="stickyMiniSymbol" class="font-mono font-black text-white text-sm">NVDA</span>
+          <span id="stickyMiniPrice" class="font-mono font-bold text-slate-200 text-xs">$214.13</span>
+          <span id="stickyMiniChange" class="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">+1.45%</span>
+          <span id="stickyMiniScore" class="px-2 py-0.5 rounded-full text-[10px] font-mono font-extrabold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">82/100</span>
+        </div>
+
+        <!-- Center: Jump Links -->
+        <nav class="flex items-center gap-1 sm:gap-1.5 shrink-0 text-xs font-semibold">
+          <a href="#overviewSection" class="nav-jump-link px-3 py-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-900 border border-transparent hover:border-slate-800 transition-all flex items-center gap-1.5 whitespace-nowrap active-nav-pill">
+            <i data-lucide="activity" class="w-3.5 h-3.5 text-cyan-400"></i>
+            <span>Overview</span>
+          </a>
+          <a href="#fourPillarsSection" class="nav-jump-link px-3 py-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-900 border border-transparent hover:border-slate-800 transition-all flex items-center gap-1.5 whitespace-nowrap">
+            <i data-lucide="layers" class="w-3.5 h-3.5 text-emerald-400"></i>
+            <span>4 Pillars</span>
+          </a>
+          <a href="#competitorsCard" class="nav-jump-link px-3 py-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-900 border border-transparent hover:border-slate-800 transition-all flex items-center gap-1.5 whitespace-nowrap">
+            <i data-lucide="building-2" class="w-3.5 h-3.5 text-cyan-400"></i>
+            <span>Peers & Moat</span>
+          </a>
+          <a href="#analystTargetCard" class="nav-jump-link px-3 py-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-900 border border-transparent hover:border-slate-800 transition-all flex items-center gap-1.5 whitespace-nowrap">
+            <i data-lucide="crosshair" class="w-3.5 h-3.5 text-indigo-400"></i>
+            <span>Wall St</span>
+          </a>
+          <a href="#executionCenterCard" class="nav-jump-link px-3 py-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-900 border border-transparent hover:border-slate-800 transition-all flex items-center gap-1.5 whitespace-nowrap">
+            <i data-lucide="shield" class="w-3.5 h-3.5 text-amber-400"></i>
+            <span>Execution</span>
+          </a>
+          <a href="#dividendCard" class="nav-jump-link px-3 py-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-900 border border-transparent hover:border-slate-800 transition-all flex items-center gap-1.5 whitespace-nowrap">
+            <i data-lucide="shield-check" class="w-3.5 h-3.5 text-teal-400"></i>
+            <span>Dividends</span>
+          </a>
+          <a href="#earningsCard" class="nav-jump-link px-3 py-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-900 border border-transparent hover:border-slate-800 transition-all flex items-center gap-1.5 whitespace-nowrap">
+            <i data-lucide="calendar" class="w-3.5 h-3.5 text-indigo-400"></i>
+            <span>Earnings</span>
+          </a>
+          <a href="#dcaSimulatorCard" class="nav-jump-link px-3 py-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-900 border border-transparent hover:border-slate-800 transition-all flex items-center gap-1.5 whitespace-nowrap">
+            <i data-lucide="calculator" class="w-3.5 h-3.5 text-emerald-400"></i>
+            <span>DCA Sim</span>
+          </a>
+        </nav>
+
+        <!-- Right: Executive View Toggle -->
+        <div class="hidden md:flex items-center gap-1.5 pl-3 border-l border-slate-800 shrink-0">
+          <button id="viewToggleBtn" onclick="toggleExecutiveView()" class="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-700 hover:border-cyan-500/50 text-[11px] font-mono font-bold text-slate-300 hover:text-white transition flex items-center gap-1" title="Toggle compact executive summary mode">
+            <i data-lucide="sliders" class="w-3 h-3 text-cyan-400"></i>
+            <span id="viewToggleLabel">Executive View</span>
+          </button>
+        </div>
+
+      </div>
     </div>
 
     <!-- Loading State Indicator -->
@@ -139,8 +224,8 @@
     <!-- Dashboard Content (Populated via JS) -->
     <div id="dashboard" class="space-y-8">
       
-      <!-- Company Header Card -->
-      <div class="glass-card rounded-3xl p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <!-- Company Header Card & Overview Anchor -->
+      <div id="overviewSection" class="glass-card rounded-3xl p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
           <div class="flex items-center gap-3">
             <h1 id="compTicker" class="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">NVDA</h1>
@@ -164,9 +249,11 @@
       <div id="verdictHero" class="glass-card rounded-3xl p-6 sm:p-8 score-glow border-emerald-500/30">
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
           
-          <!-- Score Gauge (Left Col) -->
+          <!-- Score Gauge & 5-Pillar Diamond Moat Radar (Left Col) -->
           <div class="lg:col-span-4 flex flex-col items-center justify-center p-4 text-center border-b lg:border-b-0 lg:border-r border-slate-800">
-            <div class="relative w-44 h-44 flex items-center justify-center">
+            
+            <!-- Circular Gauge View -->
+            <div id="gaugeVisualContainer" class="relative w-44 h-44 flex items-center justify-center">
               <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
                 <circle cx="50" cy="50" r="42" class="text-slate-800" stroke-width="10" stroke="currentColor" fill="transparent" />
                 <circle id="scoreProgressCircle" cx="50" cy="50" r="42" class="text-emerald-500 transition-all duration-1000 ease-out" stroke-width="10" stroke-dasharray="264" stroke-dashoffset="40" stroke-linecap="round" stroke="currentColor" fill="transparent" />
@@ -176,7 +263,23 @@
                 <span class="text-xs text-slate-400 uppercase tracking-widest mt-0.5">/ 100 Score</span>
               </div>
             </div>
-            <div id="verdictBadge" class="mt-4 px-4 py-1.5 rounded-full text-sm font-extrabold uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
+
+            <!-- 5-Pillar Diamond Moat Radar Canvas -->
+            <div id="radarVisualContainer" class="hidden w-48 h-48 flex items-center justify-center relative">
+              <canvas id="moatRadarChart" width="190" height="190"></canvas>
+            </div>
+
+            <!-- Toggle: 🎯 Total Score vs 💎 Moat Radar -->
+            <div class="flex items-center gap-1 mt-3 p-1 rounded-xl bg-slate-900 border border-slate-800">
+              <button id="btnViewGauge" onclick="switchScoreView('gauge')" class="px-2.5 py-1 rounded-lg text-[11px] font-bold font-mono transition-all bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                🎯 Total Score
+              </button>
+              <button id="btnViewRadar" onclick="switchScoreView('radar')" class="px-2.5 py-1 rounded-lg text-[11px] font-bold font-mono text-slate-400 hover:text-white transition-all">
+                💎 Moat Radar
+              </button>
+            </div>
+
+            <div id="verdictBadge" class="mt-3 px-4 py-1.5 rounded-full text-sm font-extrabold uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
               STRONG BUY / ACCUMULATE
             </div>
           </div>
@@ -229,7 +332,7 @@
       </div>
 
       <!-- 4 Core Pillars Scorecards -->
-      <div>
+      <div id="fourPillarsSection">
         <h2 class="text-xl font-bold tracking-tight text-white mb-4 flex items-center gap-2">
           <i data-lucide="layers" class="w-5 h-5 text-emerald-400"></i> The 4 Fundamental Pillars
         </h2>
@@ -245,9 +348,33 @@
               <div id="barVal" class="bg-emerald-500 h-2 rounded-full" style="width: 73%"></div>
             </div>
             <div class="space-y-1.5 text-xs text-slate-300 pt-1">
-              <div class="flex justify-between"><span>Forward P/E:</span><b id="statFwdPE" class="font-mono">17.7x</b></div>
-              <div class="flex justify-between"><span>Trailing P/E:</span><b id="statTrailPE" class="font-mono">27.1x</b></div>
-              <div class="flex justify-between"><span>PEG Ratio:</span><b id="statPEG" class="font-mono">1.12</b></div>
+              <div class="flex justify-between items-center">
+                <span class="group relative inline-flex items-center border-b border-dashed border-slate-600 cursor-help">
+                  Forward P/E
+                  <span class="pointer-events-none absolute bottom-full left-0 mb-2 hidden group-hover:block w-48 p-2 rounded-xl bg-slate-900 border border-slate-700 text-[11px] text-slate-200 font-normal leading-tight shadow-2xl z-50">
+                    Price paid per $1 of next 12-month expected earnings. Lower values indicate cheaper future multiple.
+                  </span>
+                </span>
+                <b id="statFwdPE" class="font-mono">17.7x</b>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="group relative inline-flex items-center border-b border-dashed border-slate-600 cursor-help">
+                  Trailing P/E
+                  <span class="pointer-events-none absolute bottom-full left-0 mb-2 hidden group-hover:block w-48 p-2 rounded-xl bg-slate-900 border border-slate-700 text-[11px] text-slate-200 font-normal leading-tight shadow-2xl z-50">
+                    Price paid per $1 of actual past 12-month net profits.
+                  </span>
+                </span>
+                <b id="statTrailPE" class="font-mono">27.1x</b>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="group relative inline-flex items-center border-b border-dashed border-slate-600 cursor-help">
+                  PEG Ratio
+                  <span class="pointer-events-none absolute bottom-full left-0 mb-2 hidden group-hover:block w-48 p-2 rounded-xl bg-slate-900 border border-slate-700 text-[11px] text-slate-200 font-normal leading-tight shadow-2xl z-50">
+                    P/E ratio divided by growth rate. Under 1.5 indicates growth at a reasonable price (Peter Lynch principle).
+                  </span>
+                </span>
+                <b id="statPEG" class="font-mono">1.12</b>
+              </div>
             </div>
           </div>
 
@@ -261,9 +388,33 @@
               <div id="barSol" class="bg-emerald-500 h-2 rounded-full" style="width: 96%"></div>
             </div>
             <div class="space-y-1.5 text-xs text-slate-300 pt-1">
-              <div class="flex justify-between"><span>Cash Reserves:</span><b id="statCash" class="font-mono">$45.0B</b></div>
-              <div class="flex justify-between"><span>Total Debt:</span><b id="statDebt" class="font-mono">$11.0B</b></div>
-              <div class="flex justify-between"><span>Current Ratio:</span><b id="statCurrRatio" class="font-mono">3.8x</b></div>
+              <div class="flex justify-between items-center">
+                <span class="group relative inline-flex items-center border-b border-dashed border-slate-600 cursor-help">
+                  Cash Reserves
+                  <span class="pointer-events-none absolute bottom-full left-0 mb-2 hidden group-hover:block w-48 p-2 rounded-xl bg-slate-900 border border-slate-700 text-[11px] text-slate-200 font-normal leading-tight shadow-2xl z-50">
+                    Liquid cash and short-term securities in the corporate treasury.
+                  </span>
+                </span>
+                <b id="statCash" class="font-mono">$45.0B</b>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="group relative inline-flex items-center border-b border-dashed border-slate-600 cursor-help">
+                  Total Debt
+                  <span class="pointer-events-none absolute bottom-full left-0 mb-2 hidden group-hover:block w-48 p-2 rounded-xl bg-slate-900 border border-slate-700 text-[11px] text-slate-200 font-normal leading-tight shadow-2xl z-50">
+                    All short-term and long-term interest-bearing loans and debt obligations.
+                  </span>
+                </span>
+                <b id="statDebt" class="font-mono">$11.0B</b>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="group relative inline-flex items-center border-b border-dashed border-slate-600 cursor-help">
+                  Current Ratio
+                  <span class="pointer-events-none absolute bottom-full left-0 mb-2 hidden group-hover:block w-48 p-2 rounded-xl bg-slate-900 border border-slate-700 text-[11px] text-slate-200 font-normal leading-tight shadow-2xl z-50">
+                    Current assets / current liabilities. Over 1.5x proves ability to pay obligations coming due within 1 year.
+                  </span>
+                </span>
+                <b id="statCurrRatio" class="font-mono">3.8x</b>
+              </div>
             </div>
           </div>
 
@@ -277,9 +428,33 @@
               <div id="barProf" class="bg-emerald-500 h-2 rounded-full" style="width: 96%"></div>
             </div>
             <div class="space-y-1.5 text-xs text-slate-300 pt-1">
-              <div class="flex justify-between"><span>Operating Margin:</span><b id="statOperMargin" class="font-mono">65.2%</b></div>
-              <div class="flex justify-between"><span>Gross Margin:</span><b id="statGrossMargin" class="font-mono">75.0%</b></div>
-              <div class="flex justify-between"><span>Free Cash Flow:</span><b id="statFCF" class="font-mono">$127.0B</b></div>
+              <div class="flex justify-between items-center">
+                <span class="group relative inline-flex items-center border-b border-dashed border-slate-600 cursor-help">
+                  Operating Margin
+                  <span class="pointer-events-none absolute bottom-full left-0 mb-2 hidden group-hover:block w-48 p-2 rounded-xl bg-slate-900 border border-slate-700 text-[11px] text-slate-200 font-normal leading-tight shadow-2xl z-50">
+                    Operating income divided by revenue. Measures operational efficiency after R&D and SG&A.
+                  </span>
+                </span>
+                <b id="statOperMargin" class="font-mono">65.2%</b>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="group relative inline-flex items-center border-b border-dashed border-slate-600 cursor-help">
+                  Gross Margin
+                  <span class="pointer-events-none absolute bottom-full left-0 mb-2 hidden group-hover:block w-48 p-2 rounded-xl bg-slate-900 border border-slate-700 text-[11px] text-slate-200 font-normal leading-tight shadow-2xl z-50">
+                    Revenue kept after direct cost of goods sold. The single best indicator of pricing power.
+                  </span>
+                </span>
+                <b id="statGrossMargin" class="font-mono">75.0%</b>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="group relative inline-flex items-center border-b border-dashed border-slate-600 cursor-help">
+                  Free Cash Flow
+                  <span class="pointer-events-none absolute bottom-full left-0 mb-2 hidden group-hover:block w-48 p-2 rounded-xl bg-slate-900 border border-slate-700 text-[11px] text-slate-200 font-normal leading-tight shadow-2xl z-50">
+                    Actual discretionary cash generated after all capital expenditures. The lifeblood of compounders.
+                  </span>
+                </span>
+                <b id="statFCF" class="font-mono">$127.0B</b>
+              </div>
             </div>
           </div>
 
@@ -293,9 +468,33 @@
               <div id="barGro" class="bg-emerald-500 h-2 rounded-full" style="width: 90%"></div>
             </div>
             <div class="space-y-1.5 text-xs text-slate-300 pt-1">
-              <div class="flex justify-between"><span>Revenue YoY:</span><b id="statRevGrowth" class="font-mono">+96.0%</b></div>
-              <div class="flex justify-between"><span>Earnings Growth:</span><b id="statEarnGrowth" class="font-mono">+110.0%</b></div>
-              <div class="flex justify-between"><span>Dividend Yield:</span><b id="statYield" class="font-mono">0.47%</b></div>
+              <div class="flex justify-between items-center">
+                <span class="group relative inline-flex items-center border-b border-dashed border-slate-600 cursor-help">
+                  Revenue YoY
+                  <span class="pointer-events-none absolute bottom-full left-0 mb-2 hidden group-hover:block w-48 p-2 rounded-xl bg-slate-900 border border-slate-700 text-[11px] text-slate-200 font-normal leading-tight shadow-2xl z-50">
+                    Year-over-year top-line revenue expansion velocity.
+                  </span>
+                </span>
+                <b id="statRevGrowth" class="font-mono">+96.0%</b>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="group relative inline-flex items-center border-b border-dashed border-slate-600 cursor-help">
+                  Earnings Growth
+                  <span class="pointer-events-none absolute bottom-full left-0 mb-2 hidden group-hover:block w-48 p-2 rounded-xl bg-slate-900 border border-slate-700 text-[11px] text-slate-200 font-normal leading-tight shadow-2xl z-50">
+                    Year-over-year bottom-line net profit growth rate.
+                  </span>
+                </span>
+                <b id="statEarnGrowth" class="font-mono">+110.0%</b>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="group relative inline-flex items-center border-b border-dashed border-slate-600 cursor-help">
+                  Dividend Yield
+                  <span class="pointer-events-none absolute bottom-full left-0 mb-2 hidden group-hover:block w-48 p-2 rounded-xl bg-slate-900 border border-slate-700 text-[11px] text-slate-200 font-normal leading-tight shadow-2xl z-50">
+                    Annual dividend cash payout divided by current share price.
+                  </span>
+                </span>
+                <b id="statYield" class="font-mono">0.47%</b>
+              </div>
             </div>
           </div>
 
@@ -303,7 +502,7 @@
       </div>
 
       <!-- Wall Street 12-Month Price Targets & Analyst Consensus Card -->
-      <div class="glass-card rounded-3xl p-6 sm:p-8 space-y-6">
+      <div id="analystTargetCard" class="glass-card rounded-3xl p-6 sm:p-8 space-y-6">
         <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-800 pb-5">
           <div>
             <div class="flex items-center gap-2">
@@ -1027,7 +1226,7 @@
       </div>
 
       <!-- Dividend Safety & Health Scorecard -->
-      <div class="glass-card rounded-3xl p-6 sm:p-8 space-y-6">
+      <div id="dividendCard" class="glass-card rounded-3xl p-6 sm:p-8 space-y-6">
         <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-800 pb-5">
           <div>
             <div class="flex items-center gap-2">
@@ -1139,7 +1338,7 @@
       </div>
 
       <!-- Executive & Insider Trading Tracker (SEC Form 4) -->
-      <div class="glass-card rounded-3xl p-6 sm:p-8 space-y-6">
+      <div id="insiderCard" class="glass-card rounded-3xl p-6 sm:p-8 space-y-6">
         <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-800 pb-5">
           <div>
             <div class="flex items-center gap-2">
@@ -1260,7 +1459,7 @@
       </div>
 
       <!-- Upcoming Earnings & Beat/Miss Track Record -->
-      <div class="glass-card rounded-3xl p-6 sm:p-8 space-y-6">
+      <div id="earningsCard" class="glass-card rounded-3xl p-6 sm:p-8 space-y-6">
         <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-800 pb-5">
           <div>
             <div class="flex items-center gap-2">
@@ -1352,7 +1551,7 @@
       </div>
 
       <!-- Latest Breaking News & Catalyst Radar -->
-      <div class="glass-card rounded-3xl p-6 sm:p-8 space-y-6">
+      <div id="newsCard" class="glass-card rounded-3xl p-6 sm:p-8 space-y-6">
         <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-800 pb-5">
           <div>
             <div class="flex items-center gap-2">
@@ -1441,7 +1640,7 @@
       </div>
 
       <!-- Dollar-Cost Averaging (DCA) Wealth Compounding Simulator -->
-      <div class="glass-card rounded-3xl p-6 sm:p-8 space-y-6">
+      <div id="dcaSimulatorCard" class="glass-card rounded-3xl p-6 sm:p-8 space-y-6">
         <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-800 pb-5">
           <div>
             <div class="flex items-center gap-2">
@@ -1648,6 +1847,8 @@
   <!-- Application Logic -->
   <script>
     let chartInstance = null;
+    let moatRadarInstance = null;
+    let executiveViewActive = false;
 
     function formatNumber(num) {
       if (num === null || num === undefined) return "N/A";
@@ -1782,6 +1983,26 @@
       renderEarningsTrackRecord(data.earnings_data, evalData.ticker);
       renderNewsFeed(data.news, evalData.ticker);
       initDCASimulator(data.annual_returns, m.dividend_yield, evalData.ticker, evalData.name);
+
+      // Sticky Mini Badge Update
+      const stickySymbol = document.getElementById('stickyMiniSymbol');
+      if (stickySymbol) {
+        stickySymbol.innerText = evalData.ticker;
+        document.getElementById('stickyMiniPrice').innerText = "$" + m.price.toFixed(2);
+        const stickyChg = document.getElementById('stickyMiniChange');
+        stickyChg.innerText = (m.change_pct >= 0 ? "+" : "") + m.change_pct.toFixed(2) + "%";
+        stickyChg.className = "px-1.5 py-0.5 rounded text-[10px] font-mono font-bold " + (m.change_pct >= 0 ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" : "bg-red-500/20 text-red-400 border border-red-500/30");
+        const stickyScore = document.getElementById('stickyMiniScore');
+        stickyScore.innerText = Math.round(evalData.total_score) + "/100";
+        stickyScore.className = "px-2 py-0.5 rounded-full text-[10px] font-mono font-extrabold " + (evalData.total_score >= 70 ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40" : (evalData.total_score >= 50 ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40" : "bg-rose-500/20 text-rose-300 border border-rose-500/40"));
+      }
+
+      // 5-Pillar Diamond Moat Radar
+      renderMoatRadar(evalData, data.analyst_targets);
+
+      // Save to Recently Viewed Tickers
+      saveRecentTicker(evalData.ticker, evalData.name, m.price, m.change_pct);
+
       lucide.createIcons();
     }
 
@@ -3734,9 +3955,247 @@ Generated via StockPulse: https://stockpulse-app-gamma.vercel.app`;
       }
     });
 
+    // 5-Pillar Diamond Moat Radar Chart
+    function renderMoatRadar(evalData, analystTargets) {
+      const canvas = document.getElementById('moatRadarChart');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      if (moatRadarInstance) {
+        moatRadarInstance.destroy();
+      }
+
+      const p = evalData.pillars;
+      const valScore = p.valuation ? Math.min(100, Math.round((p.valuation.score / p.valuation.max) * 100)) : 70;
+      const solScore = p.solvency ? Math.min(100, Math.round((p.solvency.score / p.solvency.max) * 100)) : 70;
+      const profScore = p.profitability ? Math.min(100, Math.round((p.profitability.score / p.profitability.max) * 100)) : 70;
+      const groScore = p.growth ? Math.min(100, Math.round((p.growth.score / p.growth.max) * 100)) : 70;
+      
+      let moatScore = 70;
+      if (analystTargets && typeof analystTargets.upside_pct === 'number') {
+        moatScore = Math.max(25, Math.min(100, Math.round(50 + analystTargets.upside_pct * 1.2)));
+      }
+
+      const scores = [valScore, solScore, profScore, groScore, moatScore];
+
+      moatRadarInstance = new Chart(ctx, {
+        type: 'radar',
+        data: {
+          labels: ['Valuation', 'Solvency', 'Profits', 'Growth', 'Moat/Upside'],
+          datasets: [{
+            label: evalData.ticker,
+            data: scores,
+            fill: true,
+            backgroundColor: 'rgba(6, 182, 212, 0.25)',
+            borderColor: '#06b6d4',
+            pointBackgroundColor: '#22d3ee',
+            pointBorderColor: '#0f172a',
+            pointBorderWidth: 2,
+            pointRadius: 3.5,
+            borderWidth: 2,
+          }, {
+            label: 'Benchmark (70)',
+            data: [70, 70, 70, 70, 70],
+            fill: false,
+            borderColor: 'rgba(148, 163, 184, 0.35)',
+            borderDash: [3, 3],
+            pointRadius: 0,
+            borderWidth: 1.5,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            r: {
+              angleLines: { color: 'rgba(148, 163, 184, 0.12)' },
+              grid: { color: 'rgba(148, 163, 184, 0.12)' },
+              pointLabels: {
+                color: '#cbd5e1',
+                font: { size: 9, weight: 'bold', family: 'Inter, sans-serif' }
+              },
+              ticks: {
+                display: false,
+                min: 0,
+                max: 100,
+                stepSize: 20
+              },
+              suggestedMin: 0,
+              suggestedMax: 100
+            }
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => `${ctx.dataset.label}: ${ctx.raw}/100`
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function switchScoreView(mode) {
+      const gaugeEl = document.getElementById('gaugeVisualContainer');
+      const radarEl = document.getElementById('radarVisualContainer');
+      const btnGauge = document.getElementById('btnViewGauge');
+      const btnRadar = document.getElementById('btnViewRadar');
+
+      if (mode === 'radar') {
+        if (gaugeEl) gaugeEl.classList.add('hidden');
+        if (radarEl) radarEl.classList.remove('hidden');
+        if (btnRadar) {
+          btnRadar.className = 'px-2.5 py-1 rounded-lg text-[11px] font-bold font-mono transition-all bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
+        }
+        if (btnGauge) {
+          btnGauge.className = 'px-2.5 py-1 rounded-lg text-[11px] font-bold font-mono text-slate-400 hover:text-white transition-all';
+        }
+        if (moatRadarInstance) {
+          moatRadarInstance.resize();
+        }
+      } else {
+        if (radarEl) radarEl.classList.add('hidden');
+        if (gaugeEl) gaugeEl.classList.remove('hidden');
+        if (btnGauge) {
+          btnGauge.className = 'px-2.5 py-1 rounded-lg text-[11px] font-bold font-mono transition-all bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
+        }
+        if (btnRadar) {
+          btnRadar.className = 'px-2.5 py-1 rounded-lg text-[11px] font-bold font-mono text-slate-400 hover:text-white transition-all';
+        }
+      }
+    }
+
+    // Recently Viewed Tickers
+    function saveRecentTicker(ticker, name, price, changePct) {
+      try {
+        let recents = JSON.parse(localStorage.getItem('stockpulse_recents') || '[]');
+        recents = recents.filter(item => item.ticker !== ticker);
+        recents.unshift({
+          ticker: ticker,
+          name: name || ticker,
+          price: typeof price === 'number' ? price : 0,
+          changePct: typeof changePct === 'number' ? changePct : 0
+        });
+        if (recents.length > 7) recents = recents.slice(0, 7);
+        localStorage.setItem('stockpulse_recents', JSON.stringify(recents));
+        renderRecentTickers();
+      } catch (e) {
+        console.warn('LocalStorage error:', e);
+      }
+    }
+
+    function renderRecentTickers() {
+      const container = document.getElementById('recentTickersContainer');
+      const list = document.getElementById('recentTickersList');
+      if (!container || !list) return;
+
+      try {
+        const recents = JSON.parse(localStorage.getItem('stockpulse_recents') || '[]');
+        if (recents.length === 0) {
+          container.classList.add('hidden');
+          return;
+        }
+
+        container.classList.remove('hidden');
+        list.innerHTML = recents.map(r => {
+          const chg = typeof r.changePct === 'number' ? r.changePct : 0;
+          const chgSign = chg >= 0 ? '+' : '';
+          const chgColor = chg >= 0 ? 'text-emerald-400' : 'text-rose-400';
+          const priceFmt = typeof r.price === 'number' && r.price > 0 ? '$' + r.price.toFixed(2) : '--';
+          return `
+            <button onclick="loadTicker('${r.ticker}')" class="px-2.5 py-1 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 hover:border-cyan-500/40 transition-all flex items-center gap-1.5 shrink-0 group">
+              <span class="font-mono font-bold text-white group-hover:text-cyan-400 text-xs">${r.ticker}</span>
+              <span class="font-mono text-xs text-slate-300">${priceFmt}</span>
+              <span class="font-mono text-[10px] font-semibold ${chgColor}">${chgSign}${chg.toFixed(1)}%</span>
+            </button>
+          `;
+        }).join('');
+      } catch (e) {
+        console.warn('Recent tickers error:', e);
+      }
+    }
+
+    // Executive View Toggle
+    function toggleExecutiveView() {
+      executiveViewActive = !executiveViewActive;
+      const btn = document.getElementById('viewToggleBtn');
+      const label = document.getElementById('viewToggleLabel');
+      const insiderCard = document.getElementById('insiderCard');
+      const newsCard = document.getElementById('newsCard');
+
+      if (executiveViewActive) {
+        if (insiderCard) insiderCard.classList.add('hidden');
+        if (newsCard) newsCard.classList.add('hidden');
+        if (label) label.innerText = "Show All Cards";
+        if (btn) btn.className = "px-2.5 py-1 rounded-lg bg-cyan-500/20 border border-cyan-500/40 text-[11px] font-mono font-bold text-cyan-300 transition flex items-center gap-1";
+      } else {
+        if (insiderCard) insiderCard.classList.remove('hidden');
+        if (newsCard) newsCard.classList.remove('hidden');
+        if (label) label.innerText = "Executive View";
+        if (btn) btn.className = "px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-700 hover:border-cyan-500/50 text-[11px] font-mono font-bold text-slate-300 hover:text-white transition flex items-center gap-1";
+      }
+    }
+
+    // Scrollspy & Sticky Mini-Ticker
+    function initScrollspy() {
+      const sectionIds = [
+        'overviewSection',
+        'fourPillarsSection',
+        'competitorsCard',
+        'analystTargetCard',
+        'executionCenterCard',
+        'dividendCard',
+        'earningsCard',
+        'dcaSimulatorCard'
+      ];
+
+      const stickyMiniBadge = document.getElementById('stickyMiniBadge');
+      const overviewEl = document.getElementById('overviewSection');
+      const navLinks = document.querySelectorAll('.nav-jump-link');
+
+      window.addEventListener('scroll', () => {
+        const scrollY = window.scrollY;
+
+        // Show/hide sticky mini badge when scrolling past overview
+        if (overviewEl && stickyMiniBadge) {
+          const triggerY = overviewEl.offsetTop + 150;
+          if (scrollY > triggerY) {
+            stickyMiniBadge.classList.remove('hidden');
+          } else {
+            stickyMiniBadge.classList.add('hidden');
+          }
+        }
+
+        // Scrollspy active highlight
+        let currentActiveId = sectionIds[0];
+        for (const id of sectionIds) {
+          const el = document.getElementById(id);
+          if (el && !el.classList.contains('hidden')) {
+            const top = el.offsetTop - 140;
+            if (scrollY >= top) {
+              currentActiveId = id;
+            }
+          }
+        }
+
+        navLinks.forEach(link => {
+          const href = link.getAttribute('href');
+          if (href === '#' + currentActiveId) {
+            link.classList.add('active-nav-pill');
+            link.classList.remove('text-slate-400');
+          } else {
+            link.classList.remove('active-nav-pill');
+            link.classList.add('text-slate-400');
+          }
+        });
+      }, { passive: true });
+    }
+
     // Initial Load with NVDA
     window.addEventListener('DOMContentLoaded', () => {
       lucide.createIcons();
+      renderRecentTickers();
+      initScrollspy();
       loadTicker('NVDA');
     });
   </script>
