@@ -20,6 +20,10 @@
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="StockPulse | Institutional Stock Evaluator" />
   <meta name="twitter:description" content="Algorithmic 100-point fundamental scorecard, 5-Pillar Moat Radar, and risk-managed execution roadmaps." />
+  <!-- Google Fonts: Inter & JetBrains Mono for Institutional Tabular Alignment -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Chart.js CDN -->
@@ -31,6 +35,10 @@
       darkMode: 'class',
       theme: {
         extend: {
+          fontFamily: {
+            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
+          },
           colors: {
             brand: {
               50: '#ecfdf5',
@@ -47,9 +55,55 @@
     html {
       scroll-behavior: smooth;
     }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace !important;
+      font-variant-numeric: tabular-nums;
+      font-feature-settings: "tnum";
+    }
     @keyframes pulse-subtle {
       0%, 100% { opacity: 1; }
       50% { opacity: 0.7; }
+    }
+    @keyframes shimmer {
+      0% {
+        transform: translateX(-100%);
+      }
+      100% {
+        transform: translateX(100%);
+      }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .fade-in {
+      animation: fadeIn 0.35s ease-out forwards;
+    }
+    .skeleton-box {
+      position: relative;
+      overflow: hidden;
+      background-color: rgba(30, 41, 59, 0.7);
+      border-radius: 0.5rem;
+    }
+    .skeleton-box::after {
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      transform: translateX(-100%);
+      background-image: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0) 0,
+        rgba(255, 255, 255, 0.04) 20%,
+        rgba(255, 255, 255, 0.12) 60%,
+        rgba(255, 255, 255, 0)
+      );
+      animation: shimmer 1.8s infinite ease-in-out;
+      content: '';
     }
     .score-glow {
       box-shadow: 0 0 35px -5px rgba(16, 185, 129, 0.25);
@@ -97,6 +151,20 @@
       background: rgba(255, 255, 255, 0.94) !important;
       border: 1px solid #e2e8f0 !important;
       box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.06) !important;
+    }
+
+    html:not(.dark) .skeleton-box {
+      background-color: #e2e8f0 !important;
+    }
+
+    html:not(.dark) .skeleton-box::after {
+      background-image: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0) 0,
+        rgba(255, 255, 255, 0.45) 20%,
+        rgba(255, 255, 255, 0.8) 60%,
+        rgba(255, 255, 255, 0)
+      ) !important;
     }
 
     html:not(.dark) .score-glow {
@@ -379,10 +447,164 @@
       </div>
     </div>
 
-    <!-- Loading State Indicator -->
-    <div id="loadingState" class="hidden py-16 text-center space-y-4">
-      <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-slate-800 border-t-emerald-500"></div>
-      <p class="text-slate-400 text-sm tracking-wide">Retrieving live financial filings & executing 100-point algorithm...</p>
+    <!-- Component-Level Skeleton Loader (Mirrors Real Dashboard Structure) -->
+    <div id="skeletonDashboard" class="space-y-8">
+      
+      <!-- Live Syncing Status Banner -->
+      <div class="glass-card rounded-2xl p-3 sm:p-4 border-cyan-500/30 flex items-center justify-between gap-3 bg-gradient-to-r from-slate-900/90 via-slate-900/70 to-slate-900/90 shadow-lg shadow-cyan-500/5">
+        <div class="flex items-center gap-3">
+          <div class="relative flex items-center justify-center">
+            <span class="w-2.5 h-2.5 rounded-full bg-cyan-400"></span>
+            <span class="absolute w-5 h-5 rounded-full bg-cyan-400/40 animate-ping"></span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-mono font-bold uppercase tracking-wider text-cyan-400">Quantitative Engine:</span>
+            <span class="text-xs text-slate-300 font-mono">Parsing SEC filings & financial models for <b id="skeletonTickerText" class="text-white font-black">NVDA</b></span>
+          </div>
+        </div>
+        <div class="hidden sm:flex items-center gap-2 text-[11px] font-mono text-slate-400">
+          <i data-lucide="loader-2" class="w-3.5 h-3.5 text-cyan-400 animate-spin"></i>
+          <span>100-Point Audit Active</span>
+        </div>
+      </div>
+
+      <!-- 1. Header Card Skeleton -->
+      <div class="glass-card rounded-3xl p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div class="space-y-3">
+          <div class="flex items-center gap-3">
+            <div class="skeleton-box h-9 w-28 rounded-xl"></div>
+            <div class="skeleton-box h-6 w-24 rounded-full"></div>
+          </div>
+          <div class="skeleton-box h-5 w-48 rounded-lg"></div>
+        </div>
+        <div class="flex flex-col md:items-end space-y-2.5">
+          <div class="flex items-center gap-3">
+            <div class="skeleton-box h-9 w-32 rounded-xl"></div>
+            <div class="skeleton-box h-7 w-20 rounded-lg"></div>
+          </div>
+          <div class="flex gap-4">
+            <div class="skeleton-box h-4 w-28 rounded"></div>
+            <div class="skeleton-box h-4 w-28 rounded"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Verdict Hero Skeleton -->
+      <div class="glass-card rounded-3xl p-6 sm:p-8 border-slate-800">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+          <!-- Left: Circular Gauge Placeholder -->
+          <div class="lg:col-span-4 flex flex-col items-center justify-center p-4 border-b lg:border-b-0 lg:border-r border-slate-800/80 space-y-4">
+            <div class="relative w-44 h-44 rounded-full border-8 border-slate-800 flex items-center justify-center">
+              <div class="w-28 h-28 rounded-full flex flex-col items-center justify-center space-y-2">
+                <div class="skeleton-box h-10 w-16 rounded-lg"></div>
+                <div class="skeleton-box h-3 w-12 rounded"></div>
+              </div>
+            </div>
+            <div class="skeleton-box h-8 w-44 rounded-full"></div>
+          </div>
+          <!-- Right: Summary & Bull/Bear Grid -->
+          <div class="lg:col-span-8 space-y-5">
+            <div class="space-y-2.5">
+              <div class="skeleton-box h-4 w-40 rounded"></div>
+              <div class="skeleton-box h-4 w-full rounded"></div>
+              <div class="skeleton-box h-4 w-4/5 rounded"></div>
+            </div>
+            <!-- Bull / Bear 2-col Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+              <div class="bg-slate-900/60 p-4 rounded-2xl border border-slate-800 space-y-3">
+                <div class="skeleton-box h-4 w-32 rounded"></div>
+                <div class="space-y-2">
+                  <div class="skeleton-box h-3 w-full rounded"></div>
+                  <div class="skeleton-box h-3 w-5/6 rounded"></div>
+                  <div class="skeleton-box h-3 w-4/6 rounded"></div>
+                </div>
+              </div>
+              <div class="bg-slate-900/60 p-4 rounded-2xl border border-slate-800 space-y-3">
+                <div class="skeleton-box h-4 w-32 rounded"></div>
+                <div class="space-y-2">
+                  <div class="skeleton-box h-3 w-full rounded"></div>
+                  <div class="skeleton-box h-3 w-5/6 rounded"></div>
+                  <div class="skeleton-box h-3 w-4/6 rounded"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Four Pillars Skeleton Grid -->
+      <div>
+        <div class="skeleton-box h-6 w-56 rounded-lg mb-4"></div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <!-- Pillar 1 -->
+          <div class="glass-card rounded-2xl p-5 space-y-4">
+            <div class="flex justify-between items-center">
+              <div class="skeleton-box h-4 w-28 rounded"></div>
+              <div class="skeleton-box h-4 w-14 rounded"></div>
+            </div>
+            <div class="skeleton-box h-2 w-full rounded-full"></div>
+            <div class="space-y-2.5 pt-1">
+              <div class="flex justify-between"><div class="skeleton-box h-3 w-20 rounded"></div><div class="skeleton-box h-3 w-12 rounded"></div></div>
+              <div class="flex justify-between"><div class="skeleton-box h-3 w-20 rounded"></div><div class="skeleton-box h-3 w-12 rounded"></div></div>
+              <div class="flex justify-between"><div class="skeleton-box h-3 w-20 rounded"></div><div class="skeleton-box h-3 w-12 rounded"></div></div>
+            </div>
+          </div>
+          <!-- Pillar 2 -->
+          <div class="glass-card rounded-2xl p-5 space-y-4">
+            <div class="flex justify-between items-center">
+              <div class="skeleton-box h-4 w-28 rounded"></div>
+              <div class="skeleton-box h-4 w-14 rounded"></div>
+            </div>
+            <div class="skeleton-box h-2 w-full rounded-full"></div>
+            <div class="space-y-2.5 pt-1">
+              <div class="flex justify-between"><div class="skeleton-box h-3 w-20 rounded"></div><div class="skeleton-box h-3 w-12 rounded"></div></div>
+              <div class="flex justify-between"><div class="skeleton-box h-3 w-20 rounded"></div><div class="skeleton-box h-3 w-12 rounded"></div></div>
+              <div class="flex justify-between"><div class="skeleton-box h-3 w-20 rounded"></div><div class="skeleton-box h-3 w-12 rounded"></div></div>
+            </div>
+          </div>
+          <!-- Pillar 3 -->
+          <div class="glass-card rounded-2xl p-5 space-y-4">
+            <div class="flex justify-between items-center">
+              <div class="skeleton-box h-4 w-28 rounded"></div>
+              <div class="skeleton-box h-4 w-14 rounded"></div>
+            </div>
+            <div class="skeleton-box h-2 w-full rounded-full"></div>
+            <div class="space-y-2.5 pt-1">
+              <div class="flex justify-between"><div class="skeleton-box h-3 w-20 rounded"></div><div class="skeleton-box h-3 w-12 rounded"></div></div>
+              <div class="flex justify-between"><div class="skeleton-box h-3 w-20 rounded"></div><div class="skeleton-box h-3 w-12 rounded"></div></div>
+              <div class="flex justify-between"><div class="skeleton-box h-3 w-20 rounded"></div><div class="skeleton-box h-3 w-12 rounded"></div></div>
+            </div>
+          </div>
+          <!-- Pillar 4 -->
+          <div class="glass-card rounded-2xl p-5 space-y-4">
+            <div class="flex justify-between items-center">
+              <div class="skeleton-box h-4 w-28 rounded"></div>
+              <div class="skeleton-box h-4 w-14 rounded"></div>
+            </div>
+            <div class="skeleton-box h-2 w-full rounded-full"></div>
+            <div class="space-y-2.5 pt-1">
+              <div class="flex justify-between"><div class="skeleton-box h-3 w-20 rounded"></div><div class="skeleton-box h-3 w-12 rounded"></div></div>
+              <div class="flex justify-between"><div class="skeleton-box h-3 w-20 rounded"></div><div class="skeleton-box h-3 w-12 rounded"></div></div>
+              <div class="flex justify-between"><div class="skeleton-box h-3 w-20 rounded"></div><div class="skeleton-box h-3 w-12 rounded"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. Competitors Card Skeleton -->
+      <div class="glass-card rounded-2xl p-6 space-y-4">
+        <div class="flex justify-between items-center">
+          <div class="skeleton-box h-5 w-44 rounded-lg"></div>
+          <div class="skeleton-box h-4 w-28 rounded"></div>
+        </div>
+        <div class="space-y-3 pt-2">
+          <div class="skeleton-box h-10 w-full rounded-xl"></div>
+          <div class="skeleton-box h-10 w-full rounded-xl"></div>
+          <div class="skeleton-box h-10 w-full rounded-xl"></div>
+          <div class="skeleton-box h-10 w-full rounded-xl"></div>
+        </div>
+      </div>
+
     </div>
 
     <!-- Error State -->
@@ -393,7 +615,7 @@
     </div>
 
     <!-- Dashboard Content (Populated via JS) -->
-    <div id="dashboard" class="space-y-8">
+    <div id="dashboard" class="hidden space-y-8">
       
       <!-- Company Header Card & Overview Anchor -->
       <div id="overviewSection" class="glass-card rounded-3xl p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -2091,13 +2313,26 @@
 
     async function loadTicker(symbol) {
       document.getElementById('tickerInput').value = symbol;
-      const loading = document.getElementById('loadingState');
+      const skeleton = document.getElementById('skeletonDashboard');
       const dashboard = document.getElementById('dashboard');
       const errorBox = document.getElementById('errorState');
+      const skeletonTickerText = document.getElementById('skeletonTickerText');
+      if (skeletonTickerText) skeletonTickerText.innerText = (symbol || '').toUpperCase();
 
-      loading.classList.remove('hidden');
-      dashboard.classList.add('opacity-40');
-      errorBox.classList.add('hidden');
+      // Smooth scroll back to top if scrolled deep down
+      if (window.scrollY > 300) {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+
+      if (skeleton) skeleton.classList.remove('hidden');
+      if (dashboard) dashboard.classList.add('hidden');
+      if (errorBox) errorBox.classList.add('hidden');
+
+      const analyzeBtn = document.getElementById('analyzeBtn');
+      if (analyzeBtn) {
+        analyzeBtn.disabled = true;
+        analyzeBtn.classList.add('opacity-75');
+      }
 
       try {
         const response = await fetch(`/api/evaluate/${encodeURIComponent(symbol)}`);
@@ -2111,12 +2346,24 @@
         }
         const data = await response.json();
         renderDashboard(data);
+        if (skeleton) skeleton.classList.add('hidden');
+        if (dashboard) {
+          dashboard.classList.remove('hidden');
+          dashboard.classList.remove('fade-in');
+          void dashboard.offsetWidth; // Trigger reflow for clean animation
+          dashboard.classList.add('fade-in');
+        }
       } catch (err) {
-        errorBox.classList.remove('hidden');
-        document.getElementById('errorMessage').innerText = err.message || 'Symbol could not be analyzed.';
+        if (skeleton) skeleton.classList.add('hidden');
+        if (errorBox) {
+          errorBox.classList.remove('hidden');
+          document.getElementById('errorMessage').innerText = err.message || 'Symbol could not be analyzed.';
+        }
       } finally {
-        loading.classList.add('hidden');
-        dashboard.classList.remove('opacity-40');
+        if (analyzeBtn) {
+          analyzeBtn.disabled = false;
+          analyzeBtn.classList.remove('opacity-75');
+        }
       }
     }
 
