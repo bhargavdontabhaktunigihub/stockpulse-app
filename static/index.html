@@ -112,6 +112,17 @@
       background: rgba(15, 23, 42, 0.75);
       backdrop-filter: blur(16px);
       border: 1px solid rgba(255, 255, 255, 0.08);
+      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .glass-card-hover:hover {
+      transform: translateY(-2px);
+      border-color: rgba(255, 255, 255, 0.16);
+      box-shadow: 0 12px 30px -6px rgba(0, 0, 0, 0.35);
+    }
+    .toast-active {
+      transform: translateY(0) !important;
+      opacity: 1 !important;
+      pointer-events: auto !important;
     }
     .scrollbar-none::-webkit-scrollbar {
       display: none;
@@ -153,6 +164,11 @@
       box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.06) !important;
     }
 
+    html:not(.dark) .glass-card-hover:hover {
+      border-color: #cbd5e1 !important;
+      box-shadow: 0 12px 30px -4px rgba(15, 23, 42, 0.12) !important;
+    }
+
     html:not(.dark) .skeleton-box {
       background-color: #e2e8f0 !important;
     }
@@ -169,6 +185,12 @@
 
     html:not(.dark) .score-glow {
       box-shadow: 0 0 35px -5px rgba(16, 185, 129, 0.15) !important;
+    }
+
+    html:not(.dark) #verdictRibbon {
+      background: linear-gradient(to right, rgba(16, 185, 129, 0.08), #ffffff, rgba(16, 185, 129, 0.04)) !important;
+      border-color: #a7f3d0 !important;
+      box-shadow: 0 4px 20px -2px rgba(16, 185, 129, 0.08) !important;
     }
 
     html:not(.dark) .bg-slate-900,
@@ -337,10 +359,14 @@
               type="text" 
               id="tickerInput" 
               placeholder="Search company name or ticker (e.g. Apple, Coca-Cola, Nike, NVDA)..." 
-              class="w-full bg-slate-900/90 border border-slate-700/80 rounded-2xl pl-12 pr-4 py-4 text-base sm:text-lg font-medium text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all shadow-inner tracking-wide"
+              class="w-full bg-slate-900/90 border border-slate-700/80 rounded-2xl pl-12 pr-16 py-4 text-base sm:text-lg font-medium text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all shadow-inner tracking-wide"
               required
               autocomplete="off"
             />
+            <!-- Keyboard Shortcut Badge -->
+            <div class="absolute right-4 top-1/2 -translate-y-1/2 hidden sm:flex items-center gap-1 pointer-events-none">
+              <kbd class="px-2 py-0.5 text-[10px] font-mono font-bold text-slate-400 bg-slate-800/90 border border-slate-700 rounded-md shadow-sm">⌘K</kbd>
+            </div>
             <!-- Live Autocomplete Dropdown -->
             <div 
               id="searchDropdown" 
@@ -618,23 +644,61 @@
     <div id="dashboard" class="hidden space-y-8">
       
       <!-- Company Header Card & Overview Anchor -->
-      <div id="overviewSection" class="glass-card rounded-3xl p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div id="overviewSection" class="glass-card glass-card-hover rounded-3xl p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <div class="flex items-center gap-3">
-            <h1 id="compTicker" class="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">NVDA</h1>
+          <div class="flex items-center gap-3 flex-wrap">
+            <h1 id="compTicker" class="text-3xl sm:text-4xl font-extrabold tracking-tight text-white font-mono">NVDA</h1>
             <span id="compSector" class="px-3 py-1 rounded-full text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700">Technology</span>
+            <!-- Live Data Freshness Badge -->
+            <div id="liveDataBadge" class="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[11px] font-mono font-medium">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span>SEC Filings Synced</span>
+            </div>
           </div>
-          <p id="compName" class="text-slate-400 text-base sm:text-lg mt-1">NVIDIA Corporation</p>
+          <p id="compName" class="text-slate-400 text-base sm:text-lg mt-1 font-medium">NVIDIA Corporation</p>
         </div>
-        <div class="flex items-baseline md:items-end flex-col">
+        <div class="flex items-start md:items-end flex-col gap-2">
           <div class="flex items-baseline gap-3">
             <span id="compPrice" class="text-3xl sm:text-4xl font-bold font-mono tracking-tight">$214.13</span>
-            <span id="compChange" class="px-2.5 py-1 rounded-lg text-sm font-semibold font-mono bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">+1.45%</span>
+            <span id="compChange" class="px-2.5 py-1 rounded-lg text-sm font-semibold font-mono bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">▲ +1.45%</span>
           </div>
-          <div class="text-xs text-slate-400 mt-1 flex gap-4">
+          <div class="text-xs text-slate-400 flex flex-wrap gap-4 items-center">
             <span>Market Cap: <b id="compMarketCap" class="text-slate-200 font-mono">$5.17T</b></span>
             <span>52W: <b id="comp52W" class="text-slate-200 font-mono">$164 - $243</b></span>
+            <!-- Quick Actions: Refresh & Share -->
+            <div class="flex items-center gap-2 pl-2 border-l border-slate-800">
+              <button onclick="refreshCurrentStock()" class="p-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white transition" title="Refresh Live Data">
+                <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+              </button>
+              <button onclick="shareCurrentStock()" class="px-2 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white text-[11px] font-mono flex items-center gap-1 transition" title="Copy Direct Shareable Link">
+                <i data-lucide="share-2" class="w-3 h-3 text-cyan-400"></i>
+                <span>Share</span>
+              </button>
+            </div>
           </div>
+        </div>
+      </div>
+
+      <!-- Institutional Action & Verdict Ribbon (Instant Top Executive Summary) -->
+      <div id="verdictRibbon" class="rounded-2xl p-4 sm:p-5 border transition-all duration-300 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-gradient-to-r from-emerald-500/15 via-slate-900/90 to-emerald-500/5 border-emerald-500/30 score-glow">
+        <div class="flex items-center gap-3.5">
+          <div id="verdictRibbonIcon" class="w-11 h-11 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center shrink-0 shadow-lg shadow-emerald-500/10">
+            <i data-lucide="shield-check" class="w-6 h-6 text-emerald-400"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="text-xs uppercase tracking-wider font-bold text-slate-400 font-mono">Institutional Action:</span>
+              <span id="verdictRibbonTitle" class="text-base sm:text-lg font-black font-mono tracking-tight text-emerald-400">STRONG BUY / HIGH CONVICTION</span>
+              <span id="verdictRibbonScorePill" class="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">94/100</span>
+            </div>
+            <p id="verdictRibbonTakeaway" class="text-xs sm:text-sm text-slate-300 mt-1">Exceptional fundamental strength with dominant pricing power and strong cash generation.</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 shrink-0 w-full md:w-auto justify-end border-t md:border-t-0 pt-2 md:pt-0 border-slate-800">
+          <a href="#executionCenterCard" class="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition shadow-lg shadow-emerald-500/20 active:scale-95">
+            <span>Execution Center</span>
+            <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+          </a>
         </div>
       </div>
 
@@ -732,13 +796,13 @@
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           
           <!-- Pillar 1: Valuation -->
-          <div class="glass-card rounded-2xl p-5 space-y-4">
+          <div class="glass-card glass-card-hover rounded-2xl p-5 space-y-4">
             <div class="flex justify-between items-center">
               <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">1. Valuation & Safety</span>
               <span id="scoreVal" class="text-sm font-bold font-mono text-emerald-400">22 / 30</span>
             </div>
             <div class="w-full bg-slate-800 rounded-full h-2">
-              <div id="barVal" class="bg-emerald-500 h-2 rounded-full" style="width: 73%"></div>
+              <div id="barVal" class="bg-emerald-500 h-2 rounded-full transition-all duration-700 ease-out" style="width: 73%"></div>
             </div>
             <div class="space-y-1.5 text-xs text-slate-300 pt-1">
               <div class="flex justify-between items-center">
@@ -772,13 +836,13 @@
           </div>
 
           <!-- Pillar 2: Solvency -->
-          <div class="glass-card rounded-2xl p-5 space-y-4">
+          <div class="glass-card glass-card-hover rounded-2xl p-5 space-y-4">
             <div class="flex justify-between items-center">
               <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">2. Balance Sheet</span>
               <span id="scoreSol" class="text-sm font-bold font-mono text-emerald-400">24 / 25</span>
             </div>
             <div class="w-full bg-slate-800 rounded-full h-2">
-              <div id="barSol" class="bg-emerald-500 h-2 rounded-full" style="width: 96%"></div>
+              <div id="barSol" class="bg-emerald-500 h-2 rounded-full transition-all duration-700 ease-out" style="width: 96%"></div>
             </div>
             <div class="space-y-1.5 text-xs text-slate-300 pt-1">
               <div class="flex justify-between items-center">
@@ -812,13 +876,13 @@
           </div>
 
           <!-- Pillar 3: Profitability -->
-          <div class="glass-card rounded-2xl p-5 space-y-4">
+          <div class="glass-card glass-card-hover rounded-2xl p-5 space-y-4">
             <div class="flex justify-between items-center">
               <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">3. Moat & Profitability</span>
               <span id="scoreProf" class="text-sm font-bold font-mono text-emerald-400">24 / 25</span>
             </div>
             <div class="w-full bg-slate-800 rounded-full h-2">
-              <div id="barProf" class="bg-emerald-500 h-2 rounded-full" style="width: 96%"></div>
+              <div id="barProf" class="bg-emerald-500 h-2 rounded-full transition-all duration-700 ease-out" style="width: 96%"></div>
             </div>
             <div class="space-y-1.5 text-xs text-slate-300 pt-1">
               <div class="flex justify-between items-center">
@@ -852,13 +916,13 @@
           </div>
 
           <!-- Pillar 4: Growth -->
-          <div class="glass-card rounded-2xl p-5 space-y-4">
+          <div class="glass-card glass-card-hover rounded-2xl p-5 space-y-4">
             <div class="flex justify-between items-center">
               <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">4. Growth Velocity</span>
               <span id="scoreGro" class="text-sm font-bold font-mono text-emerald-400">18 / 20</span>
             </div>
             <div class="w-full bg-slate-800 rounded-full h-2">
-              <div id="barGro" class="bg-emerald-500 h-2 rounded-full" style="width: 90%"></div>
+              <div id="barGro" class="bg-emerald-500 h-2 rounded-full transition-all duration-700 ease-out" style="width: 90%"></div>
             </div>
             <div class="space-y-1.5 text-xs text-slate-300 pt-1">
               <div class="flex justify-between items-center">
@@ -1021,6 +1085,23 @@
             </p>
           </div>
 
+          </div>
+        </div>
+
+        <!-- View Toggle & Rival Search Bar -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <!-- View Toggle: Cards vs Table Matrix -->
+          <div class="inline-flex p-1 rounded-xl bg-slate-900 border border-slate-800 text-xs font-mono font-bold">
+            <button id="btnCompCardsView" onclick="switchCompetitorView('cards')" class="px-3 py-1 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 transition flex items-center gap-1.5">
+              <i data-lucide="layout-grid" class="w-3.5 h-3.5"></i>
+              <span>Cards View</span>
+            </button>
+            <button id="btnCompTableView" onclick="switchCompetitorView('table')" class="px-3 py-1 rounded-lg text-slate-400 hover:text-white transition flex items-center gap-1.5">
+              <i data-lucide="table" class="w-3.5 h-3.5"></i>
+              <span>Matrix Table</span>
+            </button>
+          </div>
+
           <!-- Quick Head-to-Head Search -->
           <div class="flex items-center gap-2">
             <div class="relative">
@@ -1035,6 +1116,28 @@
         <!-- Competitor Peer Grid / Cards -->
         <div id="competitorGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <!-- Populated dynamically by renderCompetitors -->
+        </div>
+
+        <!-- Competitor Peer Matrix Table (Toggleable) -->
+        <div id="competitorTableContainer" class="hidden overflow-x-auto rounded-2xl border border-slate-800 scrollbar-none">
+          <table class="w-full text-left text-xs font-mono">
+            <thead class="bg-slate-900/90 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-800">
+              <tr>
+                <th class="py-3 px-4">Symbol & Company</th>
+                <th class="py-3 px-4">Price</th>
+                <th class="py-3 px-4">24h Chg</th>
+                <th class="py-3 px-4">Market Cap</th>
+                <th class="py-3 px-4">P/E Multiple</th>
+                <th class="py-3 px-4">Gross Margin</th>
+                <th class="py-3 px-4">Rev Growth</th>
+                <th class="py-3 px-4">Wall St Upside</th>
+                <th class="py-3 px-4 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="competitorTableBody" class="divide-y divide-slate-800/80 bg-slate-950/40">
+              <!-- Populated dynamically -->
+            </tbody>
+          </table>
         </div>
 
         <!-- Footnote / Guidance -->
@@ -2232,10 +2335,40 @@
   </div>
 
   <!-- Legal Educational Footer -->
-  <footer class="border-t border-slate-800/80 py-8 bg-slate-950 text-center text-xs text-slate-500 space-y-2">
+  <footer class="border-t border-slate-800/80 py-8 pb-24 md:pb-8 bg-slate-950 text-center text-xs text-slate-500 space-y-2">
     <p>StockPulse is an educational algorithmic due diligence tool. Nothing on this application constitutes registered investment advice.</p>
     <p>© 2026 StockPulse Engine. Built for fundamental stock analysis.</p>
   </footer>
+
+  <!-- Toast Notification Container -->
+  <div id="toastNotification" class="fixed bottom-20 md:bottom-6 right-6 z-50 transform translate-y-16 opacity-0 pointer-events-none transition-all duration-300 px-4 py-3 rounded-2xl bg-slate-900/95 border border-emerald-500/40 text-emerald-300 text-xs font-mono font-bold shadow-2xl flex items-center gap-2 backdrop-blur-xl">
+    <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i>
+    <span id="toastMessage">Direct link copied to clipboard!</span>
+  </div>
+
+  <!-- Mobile Fixed Bottom Navigation Rail (Visible only on mobile < md) -->
+  <nav class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-950/92 backdrop-blur-xl border-t border-slate-800/80 px-2 py-2 flex items-center justify-around text-[10px] font-mono shadow-2xl">
+    <a href="#overviewSection" class="flex flex-col items-center gap-1 text-slate-400 hover:text-cyan-400 active:text-cyan-300">
+      <i data-lucide="activity" class="w-4 h-4"></i>
+      <span>Verdict</span>
+    </a>
+    <a href="#fourPillarsSection" class="flex flex-col items-center gap-1 text-slate-400 hover:text-emerald-400 active:text-emerald-300">
+      <i data-lucide="layers" class="w-4 h-4"></i>
+      <span>Pillars</span>
+    </a>
+    <a href="#competitorsCard" class="flex flex-col items-center gap-1 text-slate-400 hover:text-cyan-400 active:text-cyan-300">
+      <i data-lucide="swords" class="w-4 h-4"></i>
+      <span>Rivals</span>
+    </a>
+    <a href="#executionCenterCard" class="flex flex-col items-center gap-1 text-slate-400 hover:text-amber-400 active:text-amber-300">
+      <i data-lucide="shield" class="w-4 h-4"></i>
+      <span>Sizer</span>
+    </a>
+    <a href="#dcaSimulatorCard" class="flex flex-col items-center gap-1 text-slate-400 hover:text-indigo-400 active:text-indigo-300">
+      <i data-lucide="calculator" class="w-4 h-4"></i>
+      <span>DCA</span>
+    </a>
+  </nav>
 
   <!-- Application Logic -->
   <script>
@@ -2306,6 +2439,109 @@
       return "$" + num.toLocaleString();
     }
 
+    // Toast Notification System
+    let toastTimeout = null;
+    function showToast(message) {
+      const toast = document.getElementById('toastNotification');
+      const msgEl = document.getElementById('toastMessage');
+      if (!toast || !msgEl) return;
+      msgEl.innerText = message;
+      toast.classList.add('toast-active');
+      if (toastTimeout) clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toast.classList.remove('toast-active');
+      }, 2600);
+    }
+
+    // Direct Stock Sharing & Refresh
+    function shareCurrentStock() {
+      try {
+        const ticker = currentActiveTicker || 'NVDA';
+        const url = window.location.origin + window.location.pathname + '?ticker=' + encodeURIComponent(ticker);
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(url).then(() => {
+            showToast('✓ Direct link copied to clipboard!');
+          }).catch(() => {
+            prompt('Copy link to share this analysis:', url);
+          });
+        } else {
+          prompt('Copy link to share this analysis:', url);
+        }
+      } catch (e) {
+        showToast('Link ready in address bar');
+      }
+    }
+
+    function refreshCurrentStock() {
+      if (currentActiveTicker) {
+        loadTicker(currentActiveTicker);
+        showToast('⚡ Live data refreshed');
+      }
+    }
+
+    // Number Count-Up Animation
+    function animateCountUp(element, start, end, duration) {
+      if (!element) return;
+      let startTime = null;
+      const step = (timestamp) => {
+        if (!startTime) startTime = timestamp;
+        const progress = Math.min((timestamp - startTime) / duration, 1);
+        const current = Math.floor(progress * (end - start) + start);
+        element.innerText = current;
+        if (progress < 1) {
+          window.requestAnimationFrame(step);
+        } else {
+          element.innerText = end;
+        }
+      };
+      window.requestAnimationFrame(step);
+    }
+
+    // Competitor View Switcher (Cards vs Table)
+    let competitorViewMode = 'cards';
+    function switchCompetitorView(mode) {
+      competitorViewMode = mode;
+      const grid = document.getElementById('competitorGrid');
+      const table = document.getElementById('competitorTableContainer');
+      const btnCards = document.getElementById('btnCompCardsView');
+      const btnTable = document.getElementById('btnCompTableView');
+
+      if (mode === 'table') {
+        if (grid) grid.classList.add('hidden');
+        if (table) table.classList.remove('hidden');
+        if (btnTable) btnTable.className = "px-3 py-1 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 transition flex items-center gap-1.5";
+        if (btnCards) btnCards.className = "px-3 py-1 rounded-lg text-slate-400 hover:text-white transition flex items-center gap-1.5";
+      } else {
+        if (table) table.classList.add('hidden');
+        if (grid) grid.classList.remove('hidden');
+        if (btnCards) btnCards.className = "px-3 py-1 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 transition flex items-center gap-1.5";
+        if (btnTable) btnTable.className = "px-3 py-1 rounded-lg text-slate-400 hover:text-white transition flex items-center gap-1.5";
+      }
+    }
+
+    // Global Hotkey (⌘K / Ctrl+K / '/' and 'Esc')
+    window.addEventListener('keydown', (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        const input = document.getElementById('tickerInput');
+        if (input) {
+          input.focus();
+          input.select();
+        }
+      } else if (e.key === '/' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+        e.preventDefault();
+        const input = document.getElementById('tickerInput');
+        if (input) {
+          input.focus();
+          input.select();
+        }
+      } else if (e.key === 'Escape') {
+        const dropdown = document.getElementById('searchDropdown');
+        if (dropdown) dropdown.classList.add('hidden');
+        document.activeElement?.blur?.();
+      }
+    });
+
     function formatPct(val) {
       if (val === null || val === undefined) return "N/A";
       return (val * 100).toFixed(1) + "%";
@@ -2371,6 +2607,14 @@
       const evalData = data.evaluation;
       const m = evalData.key_metrics;
       const pillars = evalData.pillars;
+      currentActiveTicker = evalData.ticker;
+
+      // Update URL query parameter without page reload
+      try {
+        const newUrl = new URL(window.location);
+        newUrl.searchParams.set('ticker', evalData.ticker);
+        window.history.replaceState({ ticker: evalData.ticker }, '', newUrl);
+      } catch (e) {}
 
       // Header
       document.getElementById('compTicker').innerText = evalData.ticker;
@@ -2379,8 +2623,9 @@
       document.getElementById('compPrice').innerText = "$" + m.price.toFixed(2);
       
       const changeEl = document.getElementById('compChange');
-      changeEl.innerText = (m.change_pct >= 0 ? "+" : "") + m.change_pct.toFixed(2) + "%";
-      if (m.change_pct >= 0) {
+      const isPos = m.change_pct >= 0;
+      changeEl.innerHTML = `<span class="inline-block mr-0.5">${isPos ? '▲' : '▼'}</span> ${isPos ? '+' : ''}${m.change_pct.toFixed(2)}%`;
+      if (isPos) {
         changeEl.className = "px-2.5 py-1 rounded-lg text-sm font-semibold font-mono bg-emerald-500/20 text-emerald-400 border border-emerald-500/30";
       } else {
         changeEl.className = "px-2.5 py-1 rounded-lg text-sm font-semibold font-mono bg-red-500/20 text-red-400 border border-red-500/30";
@@ -2389,9 +2634,44 @@
       document.getElementById('compMarketCap').innerText = formatNumber(m.market_cap);
       document.getElementById('comp52W').innerText = `$${m.fifty_two_week_low?.toFixed(0) || 0} - $${m.fifty_two_week_high?.toFixed(0) || 0}`;
 
-      // Score Gauge
+      // Top Institutional Verdict Ribbon
+      const ribbon = document.getElementById('verdictRibbon');
+      const ribbonTitle = document.getElementById('verdictRibbonTitle');
+      const ribbonScore = document.getElementById('verdictRibbonScorePill');
+      const ribbonTakeaway = document.getElementById('verdictRibbonTakeaway');
+      const ribbonIcon = document.getElementById('verdictRibbonIcon');
+
+      if (ribbon && ribbonTitle && ribbonScore && ribbonTakeaway) {
+        ribbonTitle.innerText = evalData.verdict;
+        ribbonScore.innerText = Math.round(evalData.total_score) + "/100";
+        ribbonTakeaway.innerText = evalData.summary;
+
+        if (evalData.verdict_color === 'emerald') {
+          ribbon.className = "rounded-2xl p-4 sm:p-5 border transition-all duration-300 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-gradient-to-r from-emerald-500/15 via-slate-900/90 to-emerald-500/5 border-emerald-500/30 score-glow";
+          ribbonTitle.className = "text-base sm:text-lg font-black font-mono tracking-tight text-emerald-400";
+          ribbonScore.className = "px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30";
+          if (ribbonIcon) ribbonIcon.innerHTML = `<i data-lucide="shield-check" class="w-6 h-6 text-emerald-400"></i>`;
+        } else if (evalData.verdict_color === 'blue') {
+          ribbon.className = "rounded-2xl p-4 sm:p-5 border transition-all duration-300 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-gradient-to-r from-blue-500/15 via-slate-900/90 to-blue-500/5 border-blue-500/30";
+          ribbonTitle.className = "text-base sm:text-lg font-black font-mono tracking-tight text-blue-400";
+          ribbonScore.className = "px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30";
+          if (ribbonIcon) ribbonIcon.innerHTML = `<i data-lucide="check-circle-2" class="w-6 h-6 text-blue-400"></i>`;
+        } else if (evalData.verdict_color === 'amber') {
+          ribbon.className = "rounded-2xl p-4 sm:p-5 border transition-all duration-300 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-gradient-to-r from-amber-500/15 via-slate-900/90 to-amber-500/5 border-amber-500/30";
+          ribbonTitle.className = "text-base sm:text-lg font-black font-mono tracking-tight text-amber-400";
+          ribbonScore.className = "px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30";
+          if (ribbonIcon) ribbonIcon.innerHTML = `<i data-lucide="alert-triangle" class="w-6 h-6 text-amber-400"></i>`;
+        } else {
+          ribbon.className = "rounded-2xl p-4 sm:p-5 border transition-all duration-300 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-gradient-to-r from-rose-500/15 via-slate-900/90 to-rose-500/5 border-rose-500/30";
+          ribbonTitle.className = "text-base sm:text-lg font-black font-mono tracking-tight text-rose-400";
+          ribbonScore.className = "px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30";
+          if (ribbonIcon) ribbonIcon.innerHTML = `<i data-lucide="alert-octagon" class="w-6 h-6 text-rose-400"></i>`;
+        }
+      }
+
+      // Score Gauge (Animated count-up)
       const score = evalData.total_score;
-      document.getElementById('scoreNumber').innerText = Math.round(score);
+      animateCountUp(document.getElementById('scoreNumber'), 0, Math.round(score), 700);
       const circle = document.getElementById('scoreProgressCircle');
       const circumference = 264;
       const offset = circumference - (score / 100) * circumference;
@@ -2468,8 +2748,9 @@
         stickySymbol.innerText = evalData.ticker;
         document.getElementById('stickyMiniPrice').innerText = "$" + m.price.toFixed(2);
         const stickyChg = document.getElementById('stickyMiniChange');
-        stickyChg.innerText = (m.change_pct >= 0 ? "+" : "") + m.change_pct.toFixed(2) + "%";
-        stickyChg.className = "px-1.5 py-0.5 rounded text-[10px] font-mono font-bold " + (m.change_pct >= 0 ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" : "bg-red-500/20 text-red-400 border border-red-500/30");
+        const isMiniPos = m.change_pct >= 0;
+        stickyChg.innerHTML = `<span class="inline-block mr-0.5">${isMiniPos ? '▲' : '▼'}</span> ${isMiniPos ? '+' : ''}${m.change_pct.toFixed(2)}%`;
+        stickyChg.className = "px-1.5 py-0.5 rounded text-[10px] font-mono font-bold " + (isMiniPos ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" : "bg-red-500/20 text-red-400 border border-red-500/30");
         const stickyScore = document.getElementById('stickyMiniScore');
         stickyScore.innerText = Math.round(evalData.total_score) + "/100";
         stickyScore.className = "px-2 py-0.5 rounded-full text-[10px] font-mono font-extrabold " + (evalData.total_score >= 70 ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40" : (evalData.total_score >= 50 ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40" : "bg-rose-500/20 text-rose-300 border border-rose-500/40"));
@@ -2786,11 +3067,12 @@
 
       const peers = compData.peers || [];
       grid.innerHTML = peers.map(peer => {
-        const chgColor = peer.change_pct >= 0 ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' : 'text-rose-400 bg-rose-500/10 border-rose-500/20';
-        const chgSign = peer.change_pct >= 0 ? '+' : '';
+        const isPeerPos = peer.change_pct >= 0;
+        const chgColor = isPeerPos ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' : 'text-rose-400 bg-rose-500/10 border-rose-500/20';
+        const chgSign = isPeerPos ? '▲ +' : '▼ ';
         const peDisplay = peer.trailing_pe ? `${peer.trailing_pe}x` : (peer.forward_pe ? `${peer.forward_pe}x (Fwd)` : 'N/A');
         const gmDisplay = peer.gross_margin !== null && peer.gross_margin !== undefined ? `${peer.gross_margin}%` : 'N/A';
-        const grDisplay = peer.revenue_growth !== null && peer.revenue_growth !== undefined ? `${peer.revenue_growth > 0 ? '+' : ''}${peer.revenue_growth}%` : 'N/A';
+        const grDisplay = peer.revenue_growth !== null && peer.revenue_growth !== undefined ? `${peer.revenue_growth > 0 ? '▲ +' : (peer.revenue_growth < 0 ? '▼ ' : '')}${peer.revenue_growth}%` : 'N/A';
         const upsideDisplay = peer.upside_pct !== null && peer.upside_pct !== undefined ? `${peer.upside_pct > 0 ? '+' : ''}${peer.upside_pct}%` : 'N/A';
 
         const tagsHtml = (peer.tags || []).slice(0, 2).map(t => {
@@ -2799,7 +3081,7 @@
         }).join('');
 
         return `
-          <div class="glass-card rounded-2xl p-4 border border-slate-800 hover:border-cyan-500/40 transition-all flex flex-col justify-between space-y-3 group">
+          <div class="glass-card glass-card-hover rounded-2xl p-4 border border-slate-800 hover:border-cyan-500/40 transition-all flex flex-col justify-between space-y-3 group">
             <div>
               <div class="flex items-start justify-between gap-2">
                 <div>
@@ -2855,6 +3137,50 @@
         `;
       }).join('');
 
+      // Render Matrix Table as well
+      const tableBody = document.getElementById('competitorTableBody');
+      if (tableBody) {
+        tableBody.innerHTML = peers.map(peer => {
+          const isChgPos = peer.change_pct >= 0;
+          const chgSign = isChgPos ? '▲ +' : '▼ ';
+          const chgClass = isChgPos ? 'text-emerald-400' : 'text-rose-400';
+          const peDisplay = peer.trailing_pe ? `${peer.trailing_pe}x` : (peer.forward_pe ? `${peer.forward_pe}x (Fwd)` : 'N/A');
+          const gmDisplay = peer.gross_margin !== null && peer.gross_margin !== undefined ? `${peer.gross_margin}%` : 'N/A';
+          const grDisplay = peer.revenue_growth !== null && peer.revenue_growth !== undefined ? `${peer.revenue_growth > 0 ? '▲ +' : (peer.revenue_growth < 0 ? '▼ ' : '')}${peer.revenue_growth}%` : 'N/A';
+          const upsideDisplay = peer.upside_pct !== null && peer.upside_pct !== undefined ? `${peer.upside_pct > 0 ? '+' : ''}${peer.upside_pct}%` : 'N/A';
+
+          return `
+            <tr class="hover:bg-slate-900/60 transition-colors">
+              <td class="py-3 px-4">
+                <div class="flex items-center gap-2">
+                  <span class="font-bold text-white">${peer.symbol}</span>
+                  <span class="text-slate-400 text-[11px] truncate max-w-[120px] sm:max-w-[180px]">${peer.name}</span>
+                </div>
+              </td>
+              <td class="py-3 px-4 text-white font-bold">$${peer.price.toFixed(2)}</td>
+              <td class="py-3 px-4 font-bold ${chgClass}">${chgSign}${peer.change_pct}%</td>
+              <td class="py-3 px-4 text-slate-300">${peer.market_cap_fmt}</td>
+              <td class="py-3 px-4 text-slate-200">${peDisplay}</td>
+              <td class="py-3 px-4 text-slate-200">${gmDisplay}</td>
+              <td class="py-3 px-4 ${peer.revenue_growth >= 0 ? 'text-emerald-400' : 'text-rose-400'}">${grDisplay}</td>
+              <td class="py-3 px-4 text-cyan-400 font-bold">${upsideDisplay}</td>
+              <td class="py-3 px-4 text-right">
+                <div class="inline-flex items-center gap-1.5">
+                  <button onclick="loadTicker('${peer.symbol}')" class="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-[11px] font-sans font-semibold transition" title="Analyze">
+                    Analyze
+                  </button>
+                  <button onclick="startMoatBattle('${currentActiveTicker}', '${peer.symbol}')" class="px-2.5 py-1 rounded-lg bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/30 text-[11px] font-bold transition" title="5-Round Moat Battle">
+                    ⚔️ Battle
+                  </button>
+                </div>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      }
+
+      // Preserve current view mode (cards vs table)
+      switchCompetitorView(competitorViewMode);
       lucide.createIcons();
     }
 
@@ -3654,19 +3980,19 @@ Generated via StockPulse: https://stockpulse-app-gamma.vercel.app`;
         tableBody.innerHTML = hist.map(q => {
           let outcomeBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-400 border border-slate-700">REPORTED</span>`;
           if (q.result === 'beat') {
-            outcomeBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 font-mono">BEAT 🟢</span>`;
+            outcomeBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 font-mono">✓ BEAT</span>`;
           } else if (q.result === 'miss') {
-            outcomeBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-400 border border-rose-500/40 font-mono">MISS 🔴</span>`;
+            outcomeBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-400 border border-rose-500/40 font-mono">✕ MISS</span>`;
           } else if (q.result === 'met') {
-            outcomeBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-300 border border-slate-700 font-mono">IN-LINE ⚪</span>`;
+            outcomeBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-300 border border-slate-700 font-mono">● MET</span>`;
           }
 
           let surpDisplay = `<span class="text-slate-500">—</span>`;
           if (q.surprise_pct !== null && q.surprise_pct !== undefined) {
             if (q.surprise_pct > 0) {
-              surpDisplay = `<span class="text-emerald-400 font-bold font-mono">+${q.surprise_pct.toFixed(2)}%</span>`;
+              surpDisplay = `<span class="text-emerald-400 font-bold font-mono">▲ +${q.surprise_pct.toFixed(2)}%</span>`;
             } else if (q.surprise_pct < 0) {
-              surpDisplay = `<span class="text-rose-400 font-bold font-mono">${q.surprise_pct.toFixed(2)}%</span>`;
+              surpDisplay = `<span class="text-rose-400 font-bold font-mono">▼ ${q.surprise_pct.toFixed(2)}%</span>`;
             } else {
               surpDisplay = `<span class="text-slate-400 font-bold font-mono">0.00%</span>`;
             }
@@ -3831,7 +4157,7 @@ Generated via StockPulse: https://stockpulse-app-gamma.vercel.app`;
           <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800 text-center space-y-1">
             <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">${item.year}</span>
             <div class="text-sm font-extrabold font-mono px-2 py-0.5 rounded-lg border ${colorClass}">
-              ${isPos ? '+' : ''}${item.return_pct.toFixed(1)}%
+              ${isPos ? '▲ +' : '▼ '}${item.return_pct.toFixed(1)}%
             </div>
           </div>
         `;
@@ -4719,7 +5045,12 @@ Generated via StockPulse: https://stockpulse-app-gamma.vercel.app`;
       lucide.createIcons();
       renderRecentTickers();
       initScrollspy();
-      loadTicker('NVDA');
+
+      // Support direct deep-linking via ?ticker=...
+      const urlParams = new URLSearchParams(window.location.search);
+      const requestedTicker = urlParams.get('ticker');
+      const initialTicker = (requestedTicker && requestedTicker.trim()) ? requestedTicker.trim().toUpperCase() : 'NVDA';
+      loadTicker(initialTicker);
     });
   </script>
 </body>
